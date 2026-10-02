@@ -82,7 +82,7 @@ tasks.register('generatePhotonFx', JavaExec) {
 
 tasks.register('buildCyberServerResourcePack', Zip) {
     dependsOn tasks.named('generatePhotonFx')
-    archiveFileName = 'CyberServer-Resources-0.1.0.zip'
+    archiveFileName = 'CyberServer-Resources-0.1.1.zip'
     destinationDirectory = layout.buildDirectory.dir('resourcepack')
     from('cyberserver-resourcepack')
     from(layout.buildDirectory.dir('generated-cyberserver-pack'))
