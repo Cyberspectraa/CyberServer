@@ -104,9 +104,9 @@ public final class SummoningFxGenerator {
         fx.getMainFX().objects().add(createBeam(
                 "precursor_beam", 384.0F, 8, 27, 0.16F, 0xB8FFF3C4));
         fx.getMainFX().objects().add(createBeam(
-                "summon_beam_outer", 384.0F, 16, 61, 1.20F, 0x66FFD15A));
+                "summon_beam_outer", 384.0F, 16, 61, 2.10F, 0x66FFD15A));
         fx.getMainFX().objects().add(createBeam(
-                "summon_beam_core", 384.0F, 17, 60, 0.43F, 0xE8FFF5CE));
+                "summon_beam_core", 384.0F, 17, 60, 0.85F, 0xE8FFF5CE));
 
         fx.getMainFX().objects().add(createShockwave());
         fx.getMainFX().objects().add(createArrivalBurst());
