@@ -90,7 +90,7 @@ public final class CyberServerCommands {
 
         if (!data.isSpawnConfigured()) {
             source.sendSuccess(() -> Component.literal(
-                    "CyberServer 0.1.0 | arrival spawn not configured | Photon: " + photon
+                    "CyberServer 0.1.1 | arrival spawn not configured | Photon: " + photon
             ), false);
             return 1;
         }
@@ -99,7 +99,7 @@ public final class CyberServerCommands {
         int radius = server.overworld().getGameRules().getRule(GameRules.RULE_SPAWN_RADIUS).get();
 
         source.sendSuccess(() -> Component.literal(
-                "CyberServer 0.1.0 | spawn=" +
+                "CyberServer 0.1.1 | spawn=" +
                         pos.getX() + " " + pos.getY() + " " + pos.getZ() +
                         " | spawnRadius=" + radius +
                         " | arrivedPlayers=" + data.arrivedCount() +
