@@ -59,6 +59,47 @@ public final class CyberServerEvents {
     }
 
     @SubscribeEvent
+    public void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player) || event.isEndConquered()) {
+            return;
+        }
+
+        MinecraftServer server = player.getServer();
+        if (server == null) {
+            return;
+        }
+
+        CyberServerSavedData data = CyberServerSavedData.get(server);
+        if (!data.isSpawnConfigured()) {
+            return;
+        }
+
+        BlockPos arrivalSpawn = data.getSpawnPos();
+        BlockPos personalSpawn = player.getRespawnPosition();
+
+        // Only override vanilla's safe-spawn search when the player is supposed to
+        // return to the CyberServer world/arrival spawn. Beds and respawn anchors
+        // elsewhere are left completely alone.
+        boolean usesWorldSpawn = personalSpawn == null;
+        boolean personalSpawnIsArrival =
+                personalSpawn != null
+                        && player.getRespawnDimension() == net.minecraft.world.level.Level.OVERWORLD
+                        && personalSpawn.equals(arrivalSpawn);
+
+        if (!usesWorldSpawn && !personalSpawnIsArrival) {
+            return;
+        }
+
+        double x = arrivalSpawn.getX() + 0.5D;
+        double y = arrivalSpawn.getY();
+        double z = arrivalSpawn.getZ() + 0.5D;
+
+        player.teleportTo(server.overworld(), x, y, z, data.getSpawnYaw(), 0.0F);
+        player.setDeltaMovement(Vec3.ZERO);
+        player.fallDistance = 0.0F;
+    }
+
+    @SubscribeEvent
     public void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END || ACTIVE_SEQUENCES.isEmpty()) {
             return;
