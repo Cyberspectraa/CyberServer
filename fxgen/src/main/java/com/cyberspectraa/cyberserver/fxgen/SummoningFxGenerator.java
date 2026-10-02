@@ -2,6 +2,8 @@ package com.cyberspectraa.cyberserver.fxgen;
 
 import com.lowdragmc.photon.client.fx.FX;
 import com.lowdragmc.lowdraglib.syncdata.TypedPayloadRegistries;
+import com.lowdragmc.lowdraglib.syncdata.payload.NbtTagPayload;
+import com.lowdragmc.photon.integration.PhotonLDLibPlugin;
 import com.lowdragmc.photon.client.gameobject.emitter.beam.BeamEmitter;
 import com.lowdragmc.photon.client.gameobject.emitter.data.EmissionSetting;
 import com.lowdragmc.photon.client.gameobject.emitter.data.RendererSetting;
@@ -55,6 +57,22 @@ public final class SummoningFxGenerator {
         bootstrapField.setAccessible(true);
         bootstrapField.setBoolean(null, true);
         TypedPayloadRegistries.init();
+
+        // Photon normally contributes these accessors through its LDLib plugin during
+        // game startup. Register them explicitly for this headless build-time exporter.
+        TypedPayloadRegistries.register(
+                NbtTagPayload.class, NbtTagPayload::new,
+                PhotonLDLibPlugin.NUMBER_FUNCTION_ACCESSOR, 1000
+        );
+        TypedPayloadRegistries.register(
+                NbtTagPayload.class, NbtTagPayload::new,
+                PhotonLDLibPlugin.NUMBER_FUNCTION3_ACCESSOR, 1000
+        );
+        TypedPayloadRegistries.register(
+                NbtTagPayload.class, NbtTagPayload::new,
+                PhotonLDLibPlugin.SHAPE_ACCESSOR, 1000
+        );
+
         TypedPayloadRegistries.postInit();
 
         FX fx = buildEffect();
