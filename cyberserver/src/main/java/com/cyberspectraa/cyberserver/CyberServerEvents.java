@@ -1,6 +1,7 @@
 package com.cyberspectraa.cyberserver;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -12,14 +13,19 @@ import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 public final class CyberServerEvents {
     private static final List<ArrivalSequence> ACTIVE_SEQUENCES = new ArrayList<>();
+    private static final Set<UUID> PENDING_CHARACTER_ARRIVALS = new HashSet<>();
 
     @SubscribeEvent
     public void onRegisterCommands(RegisterCommandsEvent event) {
@@ -42,20 +48,19 @@ public final class CyberServerEvents {
             return;
         }
 
-        // Mark first so a reconnect/crash cannot replay the automatic one-time arrival.
-        data.markArrived(player.getUUID());
+        if (!isCharacterReady(player)) {
+            PENDING_CHARACTER_ARRIVALS.add(player.getUUID());
+            return;
+        }
 
-        ServerLevel level = server.overworld();
-        BlockPos spawn = data.getSpawnPos();
-        double x = spawn.getX() + 0.5D;
-        double y = spawn.getY();
-        double z = spawn.getZ() + 0.5D;
+        beginFirstArrival(player, data);
+    }
 
-        player.teleportTo(level, x, y, z, data.getSpawnYaw(), 0.0F);
-        player.setDeltaMovement(Vec3.ZERO);
-        player.fallDistance = 0.0F;
-
-        startArrival(level, x, y, z);
+    @SubscribeEvent
+    public void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            PENDING_CHARACTER_ARRIVALS.remove(player.getUUID());
+        }
     }
 
     @SubscribeEvent
@@ -101,13 +106,20 @@ public final class CyberServerEvents {
 
     @SubscribeEvent
     public void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || ACTIVE_SEQUENCES.isEmpty()) {
+        if (event.phase != TickEvent.Phase.END) {
             return;
         }
 
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) {
             ACTIVE_SEQUENCES.clear();
+            PENDING_CHARACTER_ARRIVALS.clear();
+            return;
+        }
+
+        processPendingCharacterArrivals(server);
+
+        if (ACTIVE_SEQUENCES.isEmpty()) {
             return;
         }
 
@@ -149,6 +161,75 @@ public final class CyberServerEvents {
         ServerLevel overworld = server.overworld();
         overworld.setDefaultSpawnPos(spawn, yaw);
         overworld.getGameRules().getRule(GameRules.RULE_SPAWN_RADIUS).set(0, server);
+    }
+
+    private static void processPendingCharacterArrivals(MinecraftServer server) {
+        if (PENDING_CHARACTER_ARRIVALS.isEmpty()) {
+            return;
+        }
+
+        CyberServerSavedData data = CyberServerSavedData.get(server);
+        Iterator<UUID> iterator = PENDING_CHARACTER_ARRIVALS.iterator();
+
+        while (iterator.hasNext()) {
+            UUID uuid = iterator.next();
+            ServerPlayer player = server.getPlayerList().getPlayer(uuid);
+
+            if (player == null) {
+                continue;
+            }
+
+            if (!data.isSpawnConfigured() || data.hasArrived(uuid)) {
+                iterator.remove();
+                continue;
+            }
+
+            if (!isCharacterReady(player)) {
+                continue;
+            }
+
+            beginFirstArrival(player, data);
+            iterator.remove();
+        }
+    }
+
+    private static void beginFirstArrival(ServerPlayer player, CyberServerSavedData data) {
+        MinecraftServer server = player.getServer();
+        if (server == null || data.hasArrived(player.getUUID())) {
+            return;
+        }
+
+        // Only consume the one-time arrival after character creation is ready.
+        // Mark first so a reconnect/crash during the visual sequence cannot replay it.
+        data.markArrived(player.getUUID());
+
+        ServerLevel level = server.overworld();
+        BlockPos spawn = data.getSpawnPos();
+        double x = spawn.getX() + 0.5D;
+        double y = spawn.getY();
+        double z = spawn.getZ() + 0.5D;
+
+        player.teleportTo(level, x, y, z, data.getSpawnYaw(), 0.0F);
+        player.setDeltaMovement(Vec3.ZERO);
+        player.fallDistance = 0.0F;
+
+        startArrival(level, x, y, z);
+    }
+
+    private static boolean isCharacterReady(ServerPlayer player) {
+        if (!ModList.get().isLoaded("cyberraces")) {
+            return true;
+        }
+
+        CompoundTag root = player.getPersistentData().getCompound("CyberRaces");
+
+        if (root.contains("CharacterCreated")) {
+            return root.getBoolean("CharacterCreated");
+        }
+
+        // Compatibility with CyberRaces builds from before the creator existed:
+        // a player who already has a race is treated as completed.
+        return root.contains("Race");
     }
 
     private static void playTimedSounds(ServerLevel level, ArrivalSequence sequence) {
