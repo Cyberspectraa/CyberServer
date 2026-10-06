@@ -1,0 +1,23 @@
+{
+  "title": "A Gift for Mason",
+  "description": "Mason has his eye on something oddly specific. Bring him the Choso plush and hand it to him yourself.",
+  "category": "main",
+  "repeatable": false,
+  "auto_turn_in": false,
+  "min_cyber_level": 1,
+  "objectives": [
+    {
+      "id": "give_choso_plush",
+      "type": "deliver_item",
+      "target": "cybercontent:choso_plush",
+      "npc": "mason",
+      "count": 1,
+      "consume": true,
+      "description": "Hand Mason the Choso Plush"
+    }
+  ],
+  "rewards": {
+    "cyber_xp": 125,
+    "vanilla_xp": 5
+  }
+}

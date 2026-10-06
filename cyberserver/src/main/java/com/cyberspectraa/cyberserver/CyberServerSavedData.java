@@ -21,7 +21,8 @@ public final class CyberServerSavedData extends SavedData {
      * church spawn and first-arrival state after the server-director upgrade.
      */
     private static final String DATA_NAME = "season2arrival_data";
-    public static final int DATA_VERSION = 2;
+    public static final int DATA_VERSION = 3;
+    private static final int BUILT_IN_CONTENT_VERSION = 1;
 
     private final Set<UUID> arrivedPlayers = new HashSet<>();
 
@@ -47,13 +48,18 @@ public final class CyberServerSavedData extends SavedData {
     private boolean evolvedNpcRacesUnlocked = true;
 
     private double questRewardMultiplier = 1.0D;
+    private int builtInContentVersion;
 
     public static CyberServerSavedData get(MinecraftServer server) {
-        return server.overworld().getDataStorage().computeIfAbsent(
-                CyberServerSavedData::load,
-                CyberServerSavedData::new,
-                DATA_NAME
-        );
+        CyberServerSavedData data =
+                server.overworld().getDataStorage().computeIfAbsent(
+                        CyberServerSavedData::load,
+                        CyberServerSavedData::new,
+                        DATA_NAME
+                );
+
+        data.ensureBuiltInContent();
+        return data;
     }
 
     public static CyberServerSavedData load(CompoundTag tag) {
@@ -198,6 +204,14 @@ public final class CyberServerSavedData extends SavedData {
             );
         }
 
+        data.builtInContentVersion =
+                tag.contains("BuiltInContentVersion")
+                    ? Math.max(
+                        0,
+                        tag.getInt("BuiltInContentVersion")
+                    )
+                    : 0;
+
         return data;
     }
 
@@ -287,7 +301,37 @@ public final class CyberServerSavedData extends SavedData {
                 questRewardMultiplier
         );
 
+        tag.putInt(
+                "BuiltInContentVersion",
+                builtInContentVersion
+        );
+
         return tag;
+    }
+
+    private void ensureBuiltInContent() {
+        if (builtInContentVersion
+                >= BUILT_IN_CONTENT_VERSION) {
+            return;
+        }
+
+        specialNpcQuestBindings
+                .computeIfAbsent(
+                    "mason",
+                    key -> new HashSet<>()
+                )
+                .add("cyberserver:mason_choso_plush");
+
+        specialNpcQuestBindings
+                .computeIfAbsent(
+                    "mason",
+                    key -> new HashSet<>()
+                )
+                .add("cyberserver:mason_secret");
+
+        builtInContentVersion =
+                BUILT_IN_CONTENT_VERSION;
+        setDirty();
     }
 
     public boolean isSpawnConfigured() {

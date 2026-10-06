@@ -86,3 +86,13 @@ The existing arrival commands remain compatible:
 /arrival reset <player>
 /arrival status
 ```
+
+
+## First story NPC: Mason
+
+CyberServer now ships two server-owned quest definitions bound to the stable NPC id `mason`:
+
+- `cyberserver:mason_choso_plush` — the player must hand Mason `cybercontent:choso_plush`.
+- `cyberserver:mason_secret` — a hidden follow-up that only becomes available after the plush quest is completed.
+
+The default binding is seeded once per world, so existing worlds receive Mason's quests without manual binding commands. CyberServer remains server-only; Mason's skin is in CyberNpc and the physical plush item/model is in CyberContent.
