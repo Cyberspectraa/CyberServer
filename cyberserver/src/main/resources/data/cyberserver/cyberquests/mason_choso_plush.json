@@ -9,7 +9,7 @@
     {
       "id": "give_choso_plush",
       "type": "deliver_item",
-      "target": "cybercontent:choso_plush",
+      "target": "cybernpc:choso_plush",
       "npc": "mason",
       "count": 1,
       "consume": true,

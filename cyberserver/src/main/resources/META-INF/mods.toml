@@ -4,7 +4,7 @@ license="All Rights Reserved"
 
 [[mods]]
 modId="cyberserver"
-version="0.2.1"
+version="0.2.2"
 displayName="CyberServer"
 authors="Cyberspectraa"
 displayTest="IGNORE_SERVER_VERSION"
@@ -27,7 +27,7 @@ side="SERVER"
 [[dependencies.cyberserver]]
 modId="cybernpc"
 mandatory=false
-versionRange="[0.44.4,)"
+versionRange="[0.44.6,)"
 ordering="AFTER"
 side="SERVER"
 
@@ -42,12 +42,5 @@ side="SERVER"
 modId="cyberquest"
 mandatory=true
 versionRange="[0.1.2-alpha.4,)"
-ordering="AFTER"
-side="SERVER"
-
-[[dependencies.cyberserver]]
-modId="cybercontent"
-mandatory=true
-versionRange="[0.1.0-alpha.1,)"
 ordering="AFTER"
 side="SERVER"
