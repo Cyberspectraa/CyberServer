@@ -4,11 +4,11 @@ license="All Rights Reserved"
 
 [[mods]]
 modId="cyberserver"
-version="0.1.1"
+version="0.2.0"
 displayName="CyberServer"
 authors="Cyberspectraa"
 displayTest="IGNORE_SERVER_VERSION"
-description='''Server-side systems for the CyberSpectra Minecraft server, beginning with the first-join summoning/arrival system.'''
+description='''World-specific director systems for the CyberSpectra Minecraft server: arrival, story/world state, natural NPC progression policy, regions, bosses, quest bindings and economy tuning.'''
 
 [[dependencies.cyberserver]]
 modId="forge"
@@ -22,4 +22,25 @@ modId="minecraft"
 mandatory=true
 versionRange="[1.20.1,1.21)"
 ordering="NONE"
+side="SERVER"
+
+[[dependencies.cyberserver]]
+modId="cybernpc"
+mandatory=false
+versionRange="[0.44.3,)"
+ordering="AFTER"
+side="SERVER"
+
+[[dependencies.cyberserver]]
+modId="cyberraces"
+mandatory=false
+versionRange="[0.3.2-alpha.36,)"
+ordering="AFTER"
+side="SERVER"
+
+[[dependencies.cyberserver]]
+modId="cyberquest"
+mandatory=false
+versionRange="[0.1.1-alpha.3,)"
+ordering="AFTER"
 side="SERVER"

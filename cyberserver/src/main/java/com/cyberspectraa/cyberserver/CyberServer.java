@@ -12,5 +12,6 @@ public final class CyberServer {
 
     public CyberServer() {
         MinecraftForge.EVENT_BUS.register(new CyberServerEvents());
+        MinecraftForge.EVENT_BUS.register(new CyberServerNpcPolicy());
     }
 }
