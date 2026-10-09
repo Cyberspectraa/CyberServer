@@ -33,6 +33,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.8'
+          cache-read-only: true
 
       - name: Build
         run: gradle build --no-daemon --stacktrace
@@ -45,3 +46,4 @@ jobs:
             build/libs/CyberServer-0.2.2-forge-1.20.1.jar
             build/resourcepack/CyberServer-Resources-0.2.2.zip
           if-no-files-found: error
+          retention-days: 7
