@@ -1,0 +1,67 @@
+name: Reclaim generated build storage
+
+# Only generated build outputs and dependency caches are pruned.
+# This workflow runs immediately on installation, then weekly.
+on:
+  push:
+    branches: [ "main" ]
+    paths: [ ".github/workflows/storage-maintenance.yml" ]
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * 0'
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Preserve newest 10 mod builds and remove older artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ARTIFACT_PREFIX: CyberServer-
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t ids < <(
+            gh api --paginate "repos/$GH_REPO/actions/artifacts?per_page=100" \
+              --jq '.artifacts[] | select(.expired == false) | [.created_at, (.id | tostring), .name] | @tsv' \
+              | awk -F '\t' -v prefix="$ARTIFACT_PREFIX" 'index($3, prefix) == 1' \
+              | sort -r \
+              | awk -F '\t' 'NR > 10 {print $2}'
+          )
+          echo "Removing ${#ids[@]} old generated build artifacts. Keeping the newest 10."
+          deleted=0
+          for id in "${ids[@]}"; do
+            gh api -X DELETE "repos/$GH_REPO/actions/artifacts/$id" >/dev/null
+            deleted=$((deleted + 1))
+            sleep 1
+          done
+          echo "Deleted $deleted outdated build artifacts."
+          echo "Old releases, Git history and source files are untouched." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Preserve newest 4 Gradle caches and remove stale caches
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t ids < <(
+            gh api --paginate "repos/$GH_REPO/actions/caches?per_page=100" \
+              --jq '.actions_caches[] | [.last_accessed_at, (.id | tostring)] | @tsv' \
+              | sort -r \
+              | awk -F '\t' 'NR > 4 {print $2}'
+          )
+          echo "Removing ${#ids[@]} older dependency caches. Keeping the newest 4."
+          deleted=0
+          for id in "${ids[@]}"; do
+            gh api -X DELETE "repos/$GH_REPO/actions/caches/$id" >/dev/null
+            deleted=$((deleted + 1))
+            sleep 1
+          done
+          echo "Deleted $deleted stale caches."
