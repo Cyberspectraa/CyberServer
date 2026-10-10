@@ -75,7 +75,24 @@ public final class CyberServerCommands {
                                                 "player"
                                         )
                                 ))))
-                .then(Commands.literal("beam")
+                
+                .then(Commands.literal("reset")
+                        .then(Commands.argument(
+                                        "player",
+                                        EntityArgument.player()
+                                )
+                                .executes(ctx -> reset(
+                                        ctx.getSource(),
+                                        EntityArgument.getPlayer(
+                                                ctx,
+                                                "player"
+                                        )
+                                ))))
+                
+                
+                
+                .then(Commands.literal("admin")
+                    .then(Commands.literal("beam")
                         .executes(ctx -> beam(
                                 ctx.getSource(),
                                 ctx.getSource()
@@ -92,22 +109,10 @@ public final class CyberServerCommands {
                                                 "player"
                                         )
                                 ))))
-                .then(Commands.literal("reset")
-                        .then(Commands.argument(
-                                        "player",
-                                        EntityArgument.player()
-                                )
-                                .executes(ctx -> reset(
-                                        ctx.getSource(),
-                                        EntityArgument.getPlayer(
-                                                ctx,
-                                                "player"
-                                        )
-                                ))))
-                .then(Commands.literal("resetall")
+                    .then(Commands.literal("resetall")
                         .executes(ctx ->
                                 resetAll(ctx.getSource())))
-                .then(Commands.literal("mark")
+                    .then(Commands.literal("mark")
                         .then(Commands.argument(
                                         "player",
                                         EntityArgument.player()
@@ -119,7 +124,7 @@ public final class CyberServerCommands {
                                                 "player"
                                         )
                                 ))))
-                .then(Commands.literal("info")
+                    .then(Commands.literal("info")
                         .then(Commands.argument(
                                         "player",
                                         EntityArgument.player()
@@ -130,7 +135,8 @@ public final class CyberServerCommands {
                                                 ctx,
                                                 "player"
                                         )
-                                ))));
+                                ))))
+                );
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack>
