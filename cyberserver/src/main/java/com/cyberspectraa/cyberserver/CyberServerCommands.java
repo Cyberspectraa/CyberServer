@@ -18,7 +18,6 @@ import net.minecraft.world.level.GameRules;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.fml.ModList;
 import java.lang.reflect.Method;
-import java.lang.reflect.ReflectiveOperationException;
 
 public final class CyberServerCommands {
     private static final String VERSION = "0.2.0";
