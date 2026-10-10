@@ -20,7 +20,7 @@ import net.minecraftforge.fml.ModList;
 import java.lang.reflect.Method;
 
 public final class CyberServerCommands {
-    private static final String VERSION = "0.2.0";
+    private static final String VERSION = "0.2.4";
 
     private CyberServerCommands() {
     }
@@ -34,20 +34,20 @@ public final class CyberServerCommands {
         dispatcher.register(
                 Commands.literal("cyberserver")
                         .requires(source -> source.hasPermission(2))
-                        .then(buildArrivalCommands())
                         .then(Commands.literal("status")
                                 .executes(ctx ->
                                         status(ctx.getSource())))
                         .then(Commands.literal("state")
                                 .executes(ctx ->
                                         worldState(ctx.getSource())))
-                        .then(storyCommands())
-                        .then(flagCommands())
-                        .then(regionCommands())
-                        .then(bossCommands())
-                        .then(npcQuestCommands())
-                        .then(npcProgressionCommands())
-                        .then(economyCommands())
+                        .then(Commands.literal("admin")
+                                .then(storyCommands())
+                                .then(flagCommands())
+                                .then(regionCommands())
+                                .then(bossCommands())
+                                .then(npcQuestCommands())
+                                .then(npcProgressionCommands())
+                                .then(economyCommands()))
         );
     }
 
@@ -58,9 +58,6 @@ public final class CyberServerCommands {
                 .then(Commands.literal("setspawn")
                         .executes(ctx ->
                                 setSpawn(ctx.getSource())))
-                .then(Commands.literal("status")
-                        .executes(ctx ->
-                                status(ctx.getSource())))
                 .then(Commands.literal("test")
                         .executes(ctx -> test(
                                 ctx.getSource(),
