@@ -203,6 +203,23 @@ public final class CyberServerEvents {
         // Mark first so a reconnect/crash during the visual sequence cannot replay it.
         data.markArrived(player.getUUID());
 
+        // CyberNpc now owns the actual arrival point, cinematic, queue and
+        // Pope welcome when both /cyberintro location markers are configured.
+        // Do not teleport or fire a competing short arrival sequence here.
+        // CyberNpc will play this mod's summoning effects with its own scene.
+        if (ModList.get().isLoaded("cybernpc")) {
+            try {
+                Class<?> intro = Class.forName(
+                        "com.cyberspectraa.cybernpc.intro.CyberIntroService");
+                Object result = intro.getMethod("usesIntroArrival", ServerPlayer.class)
+                        .invoke(null, player);
+                if (Boolean.TRUE.equals(result)) return;
+            } catch (ReflectiveOperationException | RuntimeException error) {
+                CyberServer.LOGGER.warn(
+                        "CyberNpc arrival bridge unavailable; using legacy arrival", error);
+            }
+        }
+
         ServerLevel level = server.overworld();
         BlockPos spawn = data.getSpawnPos();
         double x = spawn.getX() + 0.5D;
