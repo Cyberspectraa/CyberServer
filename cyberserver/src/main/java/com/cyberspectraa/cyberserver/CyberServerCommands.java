@@ -16,6 +16,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.fml.ModList;
+import java.lang.reflect.Method;
+import java.lang.reflect.ReflectiveOperationException;
 
 public final class CyberServerCommands {
     private static final String VERSION = "0.2.0";
@@ -899,6 +902,47 @@ public final class CyberServerCommands {
     ) {
         MinecraftServer server =
                 source.getServer();
+
+        // CyberNpc owns the complete 6.5-second camera, summon/reveal,
+        // queue and Pope conversation. A testing command must invoke the
+        // actual controller, not CyberServer's old particle-only effect.
+        if (ModList.get().isLoaded("cybernpc")) {
+            final String result;
+            try {
+                Class<?> intro = Class.forName(
+                        "com.cyberspectraa.cybernpc.intro.CyberIntroService");
+                Method entry = intro.getMethod("testFullIntro", ServerPlayer.class);
+                Object response = entry.invoke(null, target);
+                result = response instanceof String ? (String) response : "INTEGRATION_ERROR";
+            } catch (ReflectiveOperationException | RuntimeException error) {
+                source.sendFailure(Component.literal(
+                        "CyberServer: cannot start the CyberNpc intro. "
+                        + "Update CyberNpc to v0.44.30 or later. Check server logs."));
+                CyberServer.LOGGER.error("CyberNpc full arrival test failed", error);
+                return 0;
+            }
+
+            if ("STARTED".equals(result) || "QUEUED".equals(result)) {
+                source.sendSuccess(() -> Component.literal(
+                        "CyberServer: " + target.getGameProfile().getName()
+                        + ("QUEUED".equals(result)
+                           ? " joined the summoning queue. The complete intro starts when the Pope is free."
+                           : " will play the complete cinematic and Pope greeting.")
+                        + " Character race, class and levels are unchanged."), true);
+                return 1;
+            }
+
+            String problem = switch (result) {
+                case "SETUP_REQUIRED" -> "Set both locations first: /cyberintro setarrival and /cyberintro setpopewait (in the same dimension).";
+                case "CUSTOMIZATION_INCOMPLETE" -> "Finish both character race and class customisation before testing the introduction.";
+                case "ALREADY_IN_INTRO" -> "That player is already customising, queued, or in the introduction.";
+                default -> "CyberNpc rejected the intro test (" + result + ").";
+            };
+            source.sendFailure(Component.literal("CyberServer: " + problem));
+            return 0;
+        }
+
+        // Legacy particle-only test remains available without CyberNpc.
         CyberServerSavedData data =
                 CyberServerSavedData.get(server);
 
