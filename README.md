@@ -1,98 +1,135 @@
 # CyberServer
 
-Server-side world director for the CyberSpectra Minecraft 1.20.1 Forge server.
+**Current version: 0.2.4** · Minecraft **1.20.1** · Forge **47.4.10** · Java **17**
 
-CyberServer owns rules and content that belong to this specific world. Reusable mechanics remain in CyberRaces, CyberClasses, CyberNpc and CyberQuest.
+CyberServer is the **server-side world director** for the CyberSpectra Season 2 modpack. It keeps this specific world's story state, progression policy, first-arrival settings and authored quest bindings separate from the reusable [CyberRaces](https://github.com/Cyberspectraa/CyberRaces), [CyberClasses](https://github.com/Cyberspectraa/CyberClasses), [CyberNpc](https://github.com/Cyberspectraa/CyberNpc) and [CyberQuest](https://github.com/Cyberspectraa/CyberQuest) mods.
 
-## Current responsibilities
+CyberServer is designed to run on the **server**. Integrations with other mods are conditional; their reusable mechanics do not require CyberServer.
 
-- Exact first-arrival church spawn and one-time summoning effect.
-- Persistent `WorldState` stored with the world.
-- Story act and arbitrary story flags.
-- Unlocked regions and defeated-boss state.
-- Natural Wild NPC progression policy.
-- Natural NPC class-advancement and race-evolution gates.
-- Quest XP reward multiplier.
-- Server-owned quest bindings for stable CyberQuest NPC IDs.
+## Persistent world state
 
-## Architecture
+The world saves the following server-owned values:
 
-CyberServer may integrate with the reusable gameplay mods, but those mods do not require CyberServer.
+- Current **story act** and arbitrary named Boolean **story flags**.
+- **Unlocked regions** and **defeated boss IDs**.
+- Stable NPC-ID-to-quest bindings for CyberQuest.
+- **Natural Wild NPC progression policy:** maximum generated levels, world age/local difficulty modifiers, veteran chance, and whether advanced classes/evolved races are available to naturally spawned NPCs.
+- **Quest XP multiplier** for compatible CyberQuest rewards.
+- Configured first-arrival spawn/yaw and first-arrival player tracking.
 
-```text
-CyberRaces -> CyberClasses -> CyberNpc
+The world-state values form a framework for gates and scripts; recording a region as unlocked or a boss as defeated does **not** automatically construct regions, boss fights or narrative missions.
 
-CyberQuest   reusable quest engine
-     \
-      CyberServer   world-specific director/content
-```
+## First arrival and summoning
 
-## World-state commands
+CyberServer retains the exact spawn location and tracks one-time arrivals. When CyberNpc is installed and **both CyberNpc introduction markers are configured**, CyberNpc owns the full player cinematic, queue, delayed summoning effects, reveal, camera restoration and Pope dialogue.
 
-```text
-/cyberserver state
-/cyberserver story act
-/cyberserver story act 2
-/cyberserver flag get magic_awakened
-/cyberserver flag set magic_awakened true
-/cyberserver region unlock capital
-/cyberserver region lock capital
-/cyberserver boss mark dragon
-/cyberserver boss clear dragon
-```
+Current integrated experience:
 
-## Natural NPC policy
+1. CyberRaces and CyberClasses complete character setup when those mods are installed.
+2. CyberNpc shows the temporary Blockbench **TESTING VERSION** title, then the summoning cinematic at the saved arrival block.
+3. The cinematic camera returns to the player's view and the Pope greeting begins.
 
-CyberNpc only marks that a Wild NPC spawned naturally. CyberServer decides the starting Cyber Level and whether natural advancements/evolutions are allowed.
+The accepted integrated intro implementation is in **CyberNpc 0.44.39**. CyberServer provides a summoning-effect bridge; without an eligible CyberNpc intro it retains a shorter arrival fallback (Photon support when available, otherwise vanilla-style particles/sounds).
 
-Defaults preserve the previous behaviour:
+### Arrival commands
 
-```text
-/cyberserver npcprogression
-/cyberserver npcprogression levelcap 35
-/cyberserver npcprogression advancedclasses true
-/cyberserver npcprogression evolvedraces true
-```
+All of these commands are for admins (permission level 2):
 
-Changes apply to newly generated natural Wild NPCs. Existing NPC progression is not rewritten.
-
-## Quest/economy policy
-
-```text
-/cyberserver economy questmultiplier
-/cyberserver economy questmultiplier 1.25
-```
-
-The multiplier affects Cyber XP and vanilla XP quest rewards. Item rewards are not multiplied.
-
-CyberServer can own Season 2 quest bindings for a stable NPC ID:
-
-```text
-/cyberserver npcquests bind hunter cyberserver:first_hunt
-/cyberserver npcquests list hunter
-/cyberserver npcquests unbind hunter cyberserver:first_hunt
-```
-
-The CyberNpc itself only needs the matching `CyberQuestNpcId`, allowing quest content/bindings to remain world-specific.
-
-## Arrival commands
-
-The existing arrival commands remain compatible:
-
-```text
+```mcfunction
 /arrival setspawn
 /arrival test
-/arrival beam
+/arrival test <player>
 /arrival reset <player>
-/arrival status
+/arrival admin beam
+/arrival admin beam <player>
+/arrival admin resetall
+/arrival admin mark <player>
+/arrival admin info <player>
 ```
 
+`/arrival setspawn` configures CyberServer's spawn. For the complete **CyberNpc** intro, also set:
 
-## First story NPC: Mason
+```mcfunction
+/cybernpc intro setarrival
+/cybernpc intro setpopewait
+```
 
-CyberServer now ships two server-owned quest definitions bound to the stable NPC id `mason`:
+`/arrival test` uses the CyberNpc full intro when that mod is installed and properly configured; it is not merely a particle preview. The old duplicate `/cyberserver arrival` prefix and `/arrival status` no longer exist; use `/cyberserver status` for general status.
 
-- `cyberserver:mason_choso_plush` — the player must hand Mason `cybercontent:choso_plush`.
-- `cyberserver:mason_secret` — a hidden follow-up that only becomes available after the plush quest is completed.
+## Natural Wild NPC progression
 
-The default binding is seeded once per world, so existing worlds receive Mason's quests without manual binding commands. CyberServer remains server-only; Mason's skin is in CyberNpc and the physical plush item/model is in CyberContent.
+CyberNpc identifies naturally generated Wild NPCs. CyberServer then makes a one-time decision about their starting Cyber Level and whether advanced class/race options are permitted.
+
+The starting level calculation takes account of **world age**, **local difficulty**, some random variation and a configurable chance to become a higher-level veteran. Defaults and limits live in `CyberServerSavedData` and `CyberServerNpcPolicy`. Policies affect **new naturally generated Wild NPCs** rather than rewriting every existing resident.
+
+Examples:
+
+```mcfunction
+/cyberserver admin npcprogression
+/cyberserver admin npcprogression levelcap 35
+/cyberserver admin npcprogression advancedclasses true
+/cyberserver admin npcprogression evolvedraces true
+```
+
+Wild NPC classes and their gear come from CyberClasses/CyberNpc; race evolutions and racial attributes come from CyberRaces.
+
+## World state and story controls
+
+Current command paths are grouped under `/cyberserver admin`. Examples:
+
+```mcfunction
+/cyberserver status
+/cyberserver state
+/cyberserver admin story act
+/cyberserver admin story act 2
+/cyberserver admin flag get magic_awakened
+/cyberserver admin flag set magic_awakened true
+/cyberserver admin region unlock capital
+/cyberserver admin region lock capital
+/cyberserver admin boss mark dragon
+/cyberserver admin boss clear dragon
+```
+
+These commands manage saved world state; they are not player-facing story quests by themselves.
+
+## CyberQuest and economy policy
+
+CyberServer can associate a **stable NPC ID** with one or more world-specific quest IDs, avoiding hard-coded per-entity quest content:
+
+```mcfunction
+/cyberserver admin npcquests list mason
+/cyberserver admin npcquests bind hunter cyberquest:first_hunt
+/cyberserver admin npcquests unbind hunter cyberquest:first_hunt
+```
+
+CyberQuest merges these server-owned bindings with compatible NPC-local quest bindings. NPCs use their matching `CyberQuestNpcId`.
+
+Server-owned quest XP policy:
+
+```mcfunction
+/cyberserver admin economy questmultiplier
+/cyberserver admin economy questmultiplier 1.25
+```
+
+The multiplier affects **Cyber XP and vanilla XP** quest rewards, **not** quest items or guild reputation. CyberNpc owns the separate physical coin/shop/bank gameplay.
+
+### Built-in Mason story content
+
+The world seeds two authored CyberQuest definitions and their stable binding to `mason`:
+
+- `cyberserver:mason_choso_plush` — **A Gift for Mason**: hand Mason one `cybernpc:choso_plush`.
+- `cyberserver:mason_secret` — **Mason's Secret**: unlocked after the plush quest; speak with Mason again.
+
+The current physical plush item is registered by **CyberNpc** as `cybernpc:choso_plush`. The earlier README's `cybercontent:choso_plush` reference is obsolete.
+
+Authored quests are JSON under `cyberserver/src/main/resources/data/cyberserver/cyberquests/`; world-specific story content can expand there without adding more quest logic to CyberQuest.
+
+## Installation, builds and integration notes
+
+- Target: **Minecraft 1.20.1 / Forge 47.4.10 / Java 17**.
+- Server mod JAR: produced by the repository's Gradle/GitHub Actions build; its version is read from `gradle.properties`.
+- The GitHub Actions build also packages a separately named **CyberServer resource-pack ZIP** when needed for optional visuals. A resource pack is not the server mod JAR.
+- Optional integration with CyberNpc (full intro), CyberQuest (world quest bindings/state gates), CyberRaces (Cyber Level and race policy), CyberClasses (class advancement policy) and Photon FX when present.
+- The server state stores gates and configuration; a complete Season 2 main questline, map/region content and boss encounters still require authored gameplay content.
+
+**Command migration:** older examples such as `/cyberserver npcprogression`, `/cyberserver story`, `/cyberserver economy`, `/arrival beam` and `/arrival resetall` have moved under the `admin` subcommands shown above.
