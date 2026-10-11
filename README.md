@@ -13,7 +13,7 @@ The world saves the following server-owned values:
 - Current **story act** and arbitrary named Boolean **story flags**.
 - **Unlocked regions** and **defeated boss IDs**.
 - Stable NPC-ID-to-quest bindings for CyberQuest.
-- **Natural Wild NPC progression policy:** maximum generated levels, world age/local difficulty modifiers, veteran chance, and whether advanced classes/evolved races are available to naturally spawned NPCs.
+- **Natural Wild NPC progression policy:** maximum generated levels, world age/local difficulty modifiers, veteran chance, and whether advanced classes are available to naturally spawned NPCs. The older evolved-race toggle is now superseded by CyberRaces' base-race-only NPC policy.
 - **Quest XP multiplier** for compatible CyberQuest rewards.
 - Configured first-arrival spawn/yaw and first-arrival player tracking.
 
@@ -58,7 +58,7 @@ All of these commands are for admins (permission level 2):
 
 ## Natural Wild NPC progression
 
-CyberNpc identifies naturally generated Wild NPCs. CyberServer then makes a one-time decision about their starting Cyber Level and whether advanced class/race options are permitted.
+CyberNpc identifies naturally generated Wild NPCs. CyberServer then makes a one-time decision about their starting Cyber Level and class advancement eligibility. Since **CyberRaces v0.3.2-alpha.44**, Wild NPCs receive **base races only**, regardless of Cyber Level or world-age difficulty.
 
 The starting level calculation takes account of **world age**, **local difficulty**, some random variation and a configurable chance to become a higher-level veteran. Defaults and limits live in `CyberServerSavedData` and `CyberServerNpcPolicy`. Policies affect **new naturally generated Wild NPCs** rather than rewriting every existing resident.
 
@@ -68,10 +68,10 @@ Examples:
 /cyberserver admin npcprogression
 /cyberserver admin npcprogression levelcap 35
 /cyberserver admin npcprogression advancedclasses true
-/cyberserver admin npcprogression evolvedraces true
+/cyberserver admin npcprogression evolvedraces false
 ```
 
-Wild NPC classes and their gear come from CyberClasses/CyberNpc; race evolutions and racial attributes come from CyberRaces.
+Wild NPC classes and gear come from CyberClasses/CyberNpc; **base-race** attributes, appearances and racial AI come from CyberRaces. The `evolvedraces` command remains for compatibility but **cannot grant NPC evolutions** when CyberRaces v0.3.2-alpha.44 or later is installed. Previously evolved Wild NPCs have their stored evolution removed by CyberRaces as they load, without losing their class, Cyber Level, inventory or identity.
 
 ## World state and story controls
 
