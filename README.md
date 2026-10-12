@@ -1,6 +1,14 @@
 # CyberServer
 
-**Current version: 0.2.4** · Minecraft **1.20.1** · Forge **47.4.10** · Java **17**
+**Current version: 0.2.5** · Minecraft **1.20.1** · Forge **47.4.10** · Java **17**
+
+## Voice-to-bubble captions (0.2.5 preview)
+
+This release adds an optional **Simple Voice Chat → offline Vosk → CyberNpc speech bubble** integration. Vosk English small model 0.15 is **bundled in the CyberServer JAR**; players don't download any English model. CyberNpc **0.44.51** must be installed on both server and clients to receive captions.
+
+Captions are **opt-in** (`/voicecaptions on`, `/voicecaptions off`, `/voicecaptions status`). Server admins have a master config toggle `voice_captions.enabled` in the world server config. Voice groups are excluded; only normal proximity chat is eligible. Whispering is limited to 6 blocks; other text follows voice-chat distance with a 32-block bubble limit. Two bounded background worker queues are used; audio and transcripts are never saved. The only persistent data is the player's opt-in setting.
+
+The first server run extracts the bundled English model once to `config/cyberserver/voice-model`; it does not contact an external service. The release contains the Apache-2.0 Vosk recognition engine/model and their runtime libraries (JNA). This is a **preview feature** pending live stress/accuracy/privacy testing in your modpack.
 
 CyberServer is the **server-side world director** for the CyberSpectra Season 2 modpack. It keeps this specific world's story state, progression policy, first-arrival settings and authored quest bindings separate from the reusable [CyberRaces](https://github.com/Cyberspectraa/CyberRaces), [CyberClasses](https://github.com/Cyberspectraa/CyberClasses), [CyberNpc](https://github.com/Cyberspectraa/CyberNpc) and [CyberQuest](https://github.com/Cyberspectraa/CyberQuest) mods.
 

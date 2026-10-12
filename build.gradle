@@ -33,6 +33,8 @@ sourceSets {
 }
 
 repositories {
+    mavenCentral()
+    maven { url = "https://maven.maxhenkel.de/repository/public" }
     maven {
         url = "https://cursemaven.com"
         content { includeGroup "curse.maven" }
@@ -43,8 +45,12 @@ repositories {
     }
 }
 
+configurations { embeddedSpeech }
 dependencies {
     minecraft "net.minecraftforge:forge:1.20.1-47.4.10"
+    compileOnly "de.maxhenkel.voicechat:voicechat-api:2.5.0"
+    implementation "com.alphacephei:vosk:0.3.45"
+    embeddedSpeech "com.alphacephei:vosk:0.3.45"
 
     // Build-time only. These never get bundled into CyberServer.jar.
     fxgenImplementation fg.deobf("curse.maven:photon-871522:7501597@jar")
@@ -55,7 +61,42 @@ tasks.named('processResources', ProcessResources).configure {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
+tasks.register('bundleEnglishVoiceModel') {
+    def modelFile = layout.buildDirectory.file('generated-vosk-model/vosk-model-small-en-us-0.15.zip')
+    outputs.file(modelFile)
+    doLast {
+        def dest = modelFile.get().asFile
+        dest.parentFile.mkdirs()
+        def connection = new URL('https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip').openConnection()
+        connection.setConnectTimeout(30000)
+        connection.setReadTimeout(120000)
+        def tmp = new File(dest.parentFile, dest.name + '.tmp')
+        connection.getInputStream().withCloseable { input ->
+            tmp.withOutputStream { output -> output << input }
+        }
+        if (tmp.length() < 1_000_000L || tmp.length() > 75_000_000L) {
+            tmp.delete()
+            throw new GradleException('English Vosk model outside expected size')
+        }
+        def zip = new java.util.zip.ZipFile(tmp)
+        try {
+            if (!zip.entries().toList().any { it.name.contains('am/final.mdl') }) {
+                throw new GradleException('English model archive missing required model file')
+            }
+        } finally { zip.close() }
+        java.nio.file.Files.move(tmp.toPath(), dest.toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+    }
+}
+
 tasks.named('jar', Jar).configure {
+    dependsOn tasks.named('bundleEnglishVoiceModel')
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from(layout.buildDirectory.dir('generated-vosk-model')) { into 'assets/cyberserver/voice' }
+    from({ configurations.embeddedSpeech.collect { zipTree(it) } }) {
+        exclude 'META-INF/*.SF', 'META-INF/*.RSA', 'META-INF/*.DSA', 'META-INF/INDEX.LIST'
+    }
+
     archiveFileName = "CyberServer-${mod_version}-forge-${minecraft_version}.jar"
 
     manifest {
