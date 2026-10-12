@@ -24,6 +24,11 @@ final class VoiceModelStore {
     private static volatile Model model;
     private static volatile boolean failed;
 
+    static String status() {
+        return failed ? "FAILED (check latest.log for Vosk error)"
+                : model == null ? "not loaded yet (initialises on first spoken packet)" : "loaded";
+    }
+
     static synchronized Model get() {
         if (failed) return null;
         if (model != null) return model;

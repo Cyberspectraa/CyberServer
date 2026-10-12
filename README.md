@@ -1,6 +1,23 @@
 # CyberServer
 
-**Current version: 0.2.6** · Minecraft **1.20.1** · Forge **47.4.10** · Java **17**
+**Current version: 0.2.7** · Minecraft **1.20.1** · Forge **47.4.10** · Java **17**
+
+## Voice-caption diagnostics (0.2.7)
+
+Use `/voicecaptions test` to force a harmless local proximity speech
+bubble above your player. Check in third-person front/back view. This bypasses
+Simple Voice Chat and Vosk, so it establishes whether CyberNpc packets and
+rendering work.
+
+Use `/voicecaptions debug` to inspect the Voice Chat plugin lifecycle,
+proximity connection, incoming/eligible microphone packet counts, recognizer
+model status, processed frames, output caption count and any recognition
+error. The diagnostic output does not log voice recordings or transcripts.
+
+For first-time tests: `/voicecaptions on`, `/voicecaptions test`, speak
+for 5 seconds with Simple Voice Chat connected, pause, and run
+`/voicecaptions debug`. The bundled Vosk model initializes on the first
+eligible mic packet, which can take longer on the first attempt.
 
 ## Voice-to-bubble captions (0.2.6 startup-compatibility preview)
 

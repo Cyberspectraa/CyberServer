@@ -33,6 +33,25 @@ public final class VoiceCaptionEngine {
     private static final long END_UTTERANCE_NANOS = TimeUnit.MILLISECONDS.toNanos(700);
     private static final long EXPIRE_SESSION_NANOS = TimeUnit.SECONDS.toNanos(5);
 
+    private static final java.util.concurrent.atomic.AtomicLong processedFrames =
+            new java.util.concurrent.atomic.AtomicLong();
+    private static final java.util.concurrent.atomic.AtomicLong dispatchedCaptions =
+            new java.util.concurrent.atomic.AtomicLong();
+    private static volatile String lastRecognitionError = "none";
+
+    public static String diagnostics() {
+        ThreadPoolExecutor[] current = workers;
+        int queued = 0;
+        if (current != null) for (ThreadPoolExecutor worker : current) queued += worker.getQueue().size();
+        return "workers=" + (current == null ? "inactive" : "running")
+                + ", model=" + VoiceModelStore.status()
+                + ", audio frames=" + processedFrames.get()
+                + ", captions emitted=" + dispatchedCaptions.get()
+                + ", active speakers=" + SESSIONS.size()
+                + ", queued frames=" + queued
+                + ", last error=" + lastRecognitionError;
+    }
+
     private static final Map<UUID, Session> SESSIONS = new ConcurrentHashMap<>();
     private static volatile ThreadPoolExecutor[] workers;
     private static volatile VoicechatServerApi voiceApi;
@@ -79,12 +98,14 @@ public final class VoiceCaptionEngine {
                     session = existing;
                 }
             } catch (Throwable t) {
+                lastRecognitionError = t.getClass().getSimpleName() + ": " + t.getMessage();
                 CyberServer.LOGGER.warn("Unable to start voice recognition session", t);
                 return;
             }
         }
 
         try {
+            processedFrames.incrementAndGet();
             short[] pcm = session.decoder.decode(opus);
             if (pcm == null || pcm.length < 3) return;
             // Opus PCM is mono 48 kHz; Vosk accepts 16 kHz.
@@ -111,6 +132,7 @@ public final class VoiceCaptionEngine {
                 }
             }
         } catch (Throwable t) {
+            lastRecognitionError = t.getClass().getSimpleName() + ": " + t.getMessage();
             CyberServer.LOGGER.warn("Voice recognition frame rejected", t);
             remove(playerId);
         }
@@ -177,9 +199,11 @@ public final class VoiceCaptionEngine {
                 double voiceRange = Math.min(32.0D, api.getVoiceChatDistance());
                 if (whispering) voiceRange = Math.min(voiceRange, 6.0D);
                 broadcast.invoke(null, speaker, text, complete, voiceRange);
+                dispatchedCaptions.incrementAndGet();
             } catch (ClassNotFoundException ignored) {
                 // CyberNpc not installed, safely ignore.
             } catch (ReflectiveOperationException error) {
+                lastRecognitionError = "bubble bridge: " + error.getClass().getSimpleName();
                 CyberServer.LOGGER.warn("CyberNpc live caption bridge is unavailable", error);
             }
         });
