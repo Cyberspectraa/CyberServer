@@ -20,7 +20,7 @@ import net.minecraftforge.fml.ModList;
 import java.lang.reflect.Method;
 
 public final class CyberServerCommands {
-    private static final String VERSION = "0.2.4";
+    private static final String VERSION = "0.2.6";
 
     private CyberServerCommands() {
     }

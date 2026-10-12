@@ -93,7 +93,17 @@ tasks.named('jar', Jar).configure {
     dependsOn tasks.named('bundleEnglishVoiceModel')
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from(layout.buildDirectory.dir('generated-vosk-model')) { into 'assets/cyberserver/voice' }
+    // Important: Minecraft/Forge already provide Java Native Access (JNA).
+    // Never shade a second com.sun.jna / jnidispatch runtime into a Forge
+    // mod jar: competing versions can destabilise early client startup.
+    // Whitelist Vosk's own classes and native binaries only.
     from({ configurations.embeddedSpeech.collect { zipTree(it) } }) {
+        include 'org/vosk/**'
+        include 'win32-x86-64/**'
+        include 'linux-x86-64/**'
+        include 'darwin/**'
+        include 'META-INF/LICENSE'
+        include 'META-INF/AL2.0'
         exclude 'META-INF/*.SF', 'META-INF/*.RSA', 'META-INF/*.DSA', 'META-INF/INDEX.LIST'
     }
 

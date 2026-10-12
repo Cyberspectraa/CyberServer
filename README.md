@@ -1,6 +1,10 @@
 # CyberServer
 
-**Current version: 0.2.5** · Minecraft **1.20.1** · Forge **47.4.10** · Java **17**
+**Current version: 0.2.6** · Minecraft **1.20.1** · Forge **47.4.10** · Java **17**
+
+## Voice-to-bubble captions (0.2.6 startup-compatibility preview)
+
+**0.2.6 startup hotfix:** CyberServer now embeds **only Vosk's own recognizer classes and platform binaries**, not a second copy of Java Native Access (JNA) already supplied by Minecraft/Forge. This avoids a known category of classloader collisions caused by fat-JAR Java/native dependencies. The English model remains bundled. This is a protective packaging change; further diagnostics may be needed if the client still exits during early mod discovery. Install with CyberNpc 0.44.51 (not 0.44.50), which uses the caption packet protocol.
 
 ## Voice-to-bubble captions (0.2.5 preview)
 
