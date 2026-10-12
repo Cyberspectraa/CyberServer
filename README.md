@@ -1,66 +1,6 @@
 # CyberServer
 
-**Current version: 0.2.8** · Minecraft **1.20.1** · Forge **47.4.10** · Java **17**
-
-## Voice recognition accuracy and pacing (0.2.8)
-
-* Replaced three-sample averaging with a **streaming 49-tap low-pass filter**
-  for Opus 48 kHz → Vosk 16 kHz speech. It carries state across microphone
-  packets, reducing high-frequency aliasing without a new recognition model.
-* When Vosk finalises internal subphrases, captions now keep their text in the
-  **same evolving speech bubble** until a genuine pause. Completed captions
-  still use CyberNpc's existing expiry behaviour; no CyberNpc update needed.
-* Speakers can set their own speech break timings, saved with their player:
-  `/voicecaptions pacing fast` (750 ms),
-  `/voicecaptions pacing normal` (1350 ms, default),
-  `/voicecaptions pacing relaxed` (2300 ms).
-  Use `/voicecaptions pacing` to check. Relaxed is intended for players who
-  take longer pauses between words. Settings only affect caption segmentation,
-  not microphone transmission.
-* Optional literal whole-phrase replacements can be configured as
-  `word_replacements = ["cyber spectra=>CyberSpectra"]`
-  in the existing `voice_captions` section of CyberServer's **server config**.
-  This does not train Vosk: only exact recognised phrases are replaced, with
-  no generative AI or transcript history. There are **no replacements by default**.
-* Recognition remains fully offline, opt-in, limited to proximity voice,
-  and uses the **same bundled English Vosk model** and existing CyberNpc
-  0.44.51+ client network protocol.
-* Under extreme load, bounded background queues are limited to 90 frames per
-  worker (previously 180) to reduce delayed/stale caption updates.
-
-To test: speak a few sentences with `/voicecaptions pacing normal`,
-then try `/voicecaptions pacing relaxed` and compare whether sentence endings
-feel more natural. A better resampler and configurable pauses might help
-recognition, but won't guarantee accurate recognition for every voice.
-
-## Voice-caption diagnostics (0.2.7)
-
-Use `/voicecaptions test` to force a harmless local proximity speech
-bubble above your player. Check in third-person front/back view. This bypasses
-Simple Voice Chat and Vosk, so it establishes whether CyberNpc packets and
-rendering work.
-
-Use `/voicecaptions debug` to inspect the Voice Chat plugin lifecycle,
-proximity connection, incoming/eligible microphone packet counts, recognizer
-model status, processed frames, output caption count and any recognition
-error. The diagnostic output does not log voice recordings or transcripts.
-
-For first-time tests: `/voicecaptions on`, `/voicecaptions test`, speak
-for 5 seconds with Simple Voice Chat connected, pause, and run
-`/voicecaptions debug`. The bundled Vosk model initializes on the first
-eligible mic packet, which can take longer on the first attempt.
-
-## Voice-to-bubble captions (0.2.6 startup-compatibility preview)
-
-**0.2.6 startup hotfix:** CyberServer now embeds **only Vosk's own recognizer classes and platform binaries**, not a second copy of Java Native Access (JNA) already supplied by Minecraft/Forge. This avoids a known category of classloader collisions caused by fat-JAR Java/native dependencies. The English model remains bundled. This is a protective packaging change; further diagnostics may be needed if the client still exits during early mod discovery. Install with CyberNpc 0.44.51 (not 0.44.50), which uses the caption packet protocol.
-
-## Voice-to-bubble captions (0.2.5 preview)
-
-This release adds an optional **Simple Voice Chat → offline Vosk → CyberNpc speech bubble** integration. Vosk English small model 0.15 is **bundled in the CyberServer JAR**; players don't download any English model. CyberNpc **0.44.51** must be installed on both server and clients to receive captions.
-
-Captions are **opt-in** (`/voicecaptions on`, `/voicecaptions off`, `/voicecaptions status`). Server admins have a master config toggle `voice_captions.enabled` in the world server config. Voice groups are excluded; only normal proximity chat is eligible. Whispering is limited to 6 blocks; other text follows voice-chat distance with a 32-block bubble limit. Two bounded background worker queues are used; audio and transcripts are never saved. The only persistent data is the player's opt-in setting.
-
-The first server run extracts the bundled English model once to `config/cyberserver/voice-model`; it does not contact an external service. The release contains the Apache-2.0 Vosk recognition engine/model and their runtime libraries (JNA). This is a **preview feature** pending live stress/accuracy/privacy testing in your modpack.
+**Current version: 0.2.4** · Minecraft **1.20.1** · Forge **47.4.10** · Java **17**
 
 CyberServer is the **server-side world director** for the CyberSpectra Season 2 modpack. It keeps this specific world's story state, progression policy, first-arrival settings and authored quest bindings separate from the reusable [CyberRaces](https://github.com/Cyberspectraa/CyberRaces), [CyberClasses](https://github.com/Cyberspectraa/CyberClasses), [CyberNpc](https://github.com/Cyberspectraa/CyberNpc) and [CyberQuest](https://github.com/Cyberspectraa/CyberQuest) mods.
 
