@@ -19,6 +19,42 @@ public final class VoiceCaptionConsent {
     private static final String KEY = "CyberServerVoiceCaptionsOptIn";
     private static final Set<UUID> ENABLED = ConcurrentHashMap.newKeySet();
 
+    // Per-speaker caption timing. Only the chosen mode (not audio/text) is
+    // stored in player NBT; worker threads read the concurrent map.
+    private static final String PACING_KEY = "CyberServerVoiceCaptionPacing";
+    private static final java.util.concurrent.ConcurrentMap<UUID, Pacing> PACING =
+            new ConcurrentHashMap<>();
+
+    public enum Pacing {
+        FAST(750),
+        NORMAL(1350),
+        RELAXED(2300);
+
+        private final int silenceMillis;
+        Pacing(int silenceMillis) { this.silenceMillis = silenceMillis; }
+        public int silenceMillis() { return silenceMillis; }
+
+        static Pacing fromSaved(String value) {
+            try { return Pacing.valueOf(value); }
+            catch (IllegalArgumentException | NullPointerException ignored) { return NORMAL; }
+        }
+    }
+
+    public static Pacing getPacing(UUID player) {
+        return PACING.getOrDefault(player, Pacing.NORMAL);
+    }
+
+    public static void setPacing(ServerPlayer player, Pacing pacing) {
+        CompoundTag persistent = player.getPersistentData()
+                .getCompound(Player.PERSISTED_NBT_TAG);
+        persistent.putString(PACING_KEY, pacing.name());
+        player.getPersistentData().put(Player.PERSISTED_NBT_TAG, persistent);
+        PACING.put(player.getUUID(), pacing);
+        player.sendSystemMessage(Component.literal("Voice caption pacing: "
+                + pacing.name().toLowerCase(java.util.Locale.ROOT)
+                + " (" + pacing.silenceMillis() + "ms pause before a final sentence)."));
+    }
+
     public static boolean isEnabled(UUID player) {
         return ENABLED.contains(player);
     }
@@ -31,6 +67,7 @@ public final class VoiceCaptionConsent {
         if (enabled) ENABLED.add(player.getUUID());
         else {
             ENABLED.remove(player.getUUID());
+            PACING.remove(player.getUUID());
             VoiceCaptionEngine.clearPlayer(player.getUUID());
         }
         player.sendSystemMessage(Component.literal("Voice captions: "
@@ -42,9 +79,12 @@ public final class VoiceCaptionConsent {
     @SubscribeEvent
     public void onJoin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            if (player.getPersistentData().getCompound(Player.PERSISTED_NBT_TAG)
-                    .getBoolean(KEY)) ENABLED.add(player.getUUID());
+            CompoundTag persisted = player.getPersistentData()
+                    .getCompound(Player.PERSISTED_NBT_TAG);
+            if (persisted.getBoolean(KEY)) ENABLED.add(player.getUUID());
             else ENABLED.remove(player.getUUID());
+            PACING.put(player.getUUID(),
+                    Pacing.fromSaved(persisted.getString(PACING_KEY)));
         }
     }
 

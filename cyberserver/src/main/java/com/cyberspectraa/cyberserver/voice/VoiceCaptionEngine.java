@@ -16,7 +16,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -30,7 +29,6 @@ public final class VoiceCaptionEngine {
     private static final int MAX_ACTIVE_SPEAKERS = 2;
     private static final int MAX_CAPTION_CHARS = 180;
     private static final long PARTIAL_NANOS = TimeUnit.MILLISECONDS.toNanos(450);
-    private static final long END_UTTERANCE_NANOS = TimeUnit.MILLISECONDS.toNanos(700);
     private static final long EXPIRE_SESSION_NANOS = TimeUnit.SECONDS.toNanos(5);
 
     private static final java.util.concurrent.atomic.AtomicLong processedFrames =
@@ -63,7 +61,7 @@ public final class VoiceCaptionEngine {
         for (int i = 0; i < WORKER_COUNT; i++) {
             final int number = i;
             created[i] = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.SECONDS,
-                    new ArrayBlockingQueue<>(180), runnable -> {
+                    new ArrayBlockingQueue<>(90), runnable -> {
                 Thread thread = new Thread(runnable, "CyberServer-Vosk-" + number);
                 thread.setDaemon(true);
                 return thread;
@@ -108,33 +106,38 @@ public final class VoiceCaptionEngine {
             processedFrames.incrementAndGet();
             short[] pcm = session.decoder.decode(opus);
             if (pcm == null || pcm.length < 3) return;
-            // Opus PCM is mono 48 kHz; Vosk accepts 16 kHz.
-            // Simple bounded 3:1 averaging low-pass decimation.
-            short[] downsampled = new short[pcm.length / 3];
-            for (int i = 0; i < downsampled.length; i++) {
-                int p = i * 3;
-                downsampled[i] = (short) ((pcm[p] + pcm[p + 1] + pcm[p + 2]) / 3);
-            }
+            // Filtering/decimation uses a stateful low-pass FIR so 48 kHz
+            // speech does not alias into Vosk's required 16 kHz input.
+            short[] downsampled = session.resampler.convert(pcm);
+            if (downsampled.length == 0) return;
             session.lastPacket = now;
             session.hasAudio = true;
             session.whispering = whispering;
             if (session.recognizer.acceptWaveForm(downsampled, downsampled.length)) {
-                String finished = text(session.recognizer.getResult(), "text");
-                publish(playerId, finished, true, whispering);
-                // Vosk automatically advances its internal utterance boundary.
-                session.lastPartial = "";
-            } else if (now - session.lastEmit >= PARTIAL_NANOS) {
-                String partial = text(session.recognizer.getPartialResult(), "partial");
-                if (!partial.isBlank() && !partial.equals(session.lastPartial)) {
-                    publish(playerId, partial, false, whispering);
-                    session.lastPartial = partial;
+                // Native Vosk may end a subphrase even while the speaker is
+                // continuing. Keep the text for the same human utterance.
+                String recognized = text(session.recognizer.getResult(), "text");
+                session.appendSegment(recognized);
+                if (now - session.lastEmit >= PARTIAL_NANOS) {
+                    emitPartial(playerId, session, session.compose(""));
                     session.lastEmit = now;
                 }
+            } else if (now - session.lastEmit >= PARTIAL_NANOS) {
+                String partial = text(session.recognizer.getPartialResult(), "partial");
+                emitPartial(playerId, session, session.compose(partial));
+                session.lastEmit = now;
             }
         } catch (Throwable t) {
             lastRecognitionError = t.getClass().getSimpleName() + ": " + t.getMessage();
             CyberServer.LOGGER.warn("Voice recognition frame rejected", t);
             remove(playerId);
+        }
+    }
+
+    private static void emitPartial(UUID playerId, Session session, String caption) {
+        if (caption.length() >= 3 && !caption.equals(session.lastPartial)) {
+            publish(playerId, caption, false, session.whispering);
+            session.lastPartial = caption;
         }
     }
 
@@ -147,17 +150,26 @@ public final class VoiceCaptionEngine {
                 Session session = SESSIONS.get(playerId);
                 if (session == null) return;
                 long gap = System.nanoTime() - session.lastPacket;
-                if (gap > END_UTTERANCE_NANOS && session.hasAudio) {
+                long pauseRequired = TimeUnit.MILLISECONDS.toNanos(
+                        VoiceCaptionConsent.getPacing(playerId).silenceMillis());
+                if (gap > pauseRequired && session.hasAudio) {
                     try {
                         String result = text(session.recognizer.getFinalResult(), "text");
-                        if (!result.isBlank()) publish(playerId, result, true, session.whispering);
+                        session.appendSegment(result);
+                        String completed = session.compose("");
+                        if (!completed.isBlank()) {
+                            publish(playerId, completed, true, session.whispering);
+                        }
                         session.recognizer.close();
                         Model model = VoiceModelStore.get();
                         if (model == null) { remove(playerId); return; }
                         session.recognizer = new Recognizer(model, 16000F);
+                        session.pendingSegments = "";
                         session.lastPartial = "";
+                        session.lastEmit = 0L;
                         session.hasAudio = false;
                     } catch (Throwable t) {
+                        lastRecognitionError = t.getClass().getSimpleName() + ": " + t.getMessage();
                         remove(playerId);
                     }
                 }
@@ -180,6 +192,12 @@ public final class VoiceCaptionEngine {
     private static void publish(UUID playerId, String text, boolean complete,
                                 boolean whispering) {
         if (text == null || text.isBlank()) return;
+        String corrected = CaptionVocabulary.correct(text);
+        if (corrected.isBlank()) return;
+        if (corrected.length() > MAX_CAPTION_CHARS) {
+            corrected = corrected.substring(corrected.length() - MAX_CAPTION_CHARS);
+        }
+        final String captionToSend = corrected;
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         VoicechatServerApi api = voiceApi;
         if (server == null || api == null) return;
@@ -198,7 +216,7 @@ public final class VoiceCaptionEngine {
                         ServerPlayer.class, String.class, boolean.class, double.class);
                 double voiceRange = Math.min(32.0D, api.getVoiceChatDistance());
                 if (whispering) voiceRange = Math.min(voiceRange, 6.0D);
-                broadcast.invoke(null, speaker, text, complete, voiceRange);
+                broadcast.invoke(null, speaker, captionToSend, complete, voiceRange);
                 dispatchedCaptions.incrementAndGet();
             } catch (ClassNotFoundException ignored) {
                 // CyberNpc not installed, safely ignore.
@@ -241,7 +259,9 @@ public final class VoiceCaptionEngine {
 
     private static final class Session {
         final OpusDecoder decoder;
+        final VoicePcmResampler resampler = new VoicePcmResampler();
         Recognizer recognizer;
+        String pendingSegments = "";
         long lastPacket = System.nanoTime();
         long lastEmit;
         String lastPartial = "";
@@ -251,6 +271,24 @@ public final class VoiceCaptionEngine {
         Session(OpusDecoder decoder, Recognizer recognizer) {
             this.decoder = decoder;
             this.recognizer = recognizer;
+        }
+
+        void appendSegment(String recognized) {
+            if (recognized == null || recognized.isBlank()) return;
+            String candidate = pendingSegments.isBlank()
+                    ? recognized : pendingSegments + " " + recognized;
+            // Keep memory/display bounded during extremely long speech turns.
+            pendingSegments = candidate.length() > MAX_CAPTION_CHARS
+                    ? candidate.substring(candidate.length() - MAX_CAPTION_CHARS)
+                    : candidate;
+        }
+
+        String compose(String partial) {
+            String caption = (pendingSegments + " " + partial).trim();
+            // Prefer the newest words when a phrase exceeds the bubble limit.
+            return caption.length() > MAX_CAPTION_CHARS
+                    ? caption.substring(caption.length() - MAX_CAPTION_CHARS)
+                    : caption;
         }
 
         void close() {

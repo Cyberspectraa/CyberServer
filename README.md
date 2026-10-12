@@ -1,6 +1,37 @@
 # CyberServer
 
-**Current version: 0.2.7** · Minecraft **1.20.1** · Forge **47.4.10** · Java **17**
+**Current version: 0.2.8** · Minecraft **1.20.1** · Forge **47.4.10** · Java **17**
+
+## Voice recognition accuracy and pacing (0.2.8)
+
+* Replaced three-sample averaging with a **streaming 49-tap low-pass filter**
+  for Opus 48 kHz → Vosk 16 kHz speech. It carries state across microphone
+  packets, reducing high-frequency aliasing without a new recognition model.
+* When Vosk finalises internal subphrases, captions now keep their text in the
+  **same evolving speech bubble** until a genuine pause. Completed captions
+  still use CyberNpc's existing expiry behaviour; no CyberNpc update needed.
+* Speakers can set their own speech break timings, saved with their player:
+  `/voicecaptions pacing fast` (750 ms),
+  `/voicecaptions pacing normal` (1350 ms, default),
+  `/voicecaptions pacing relaxed` (2300 ms).
+  Use `/voicecaptions pacing` to check. Relaxed is intended for players who
+  take longer pauses between words. Settings only affect caption segmentation,
+  not microphone transmission.
+* Optional literal whole-phrase replacements can be configured as
+  `word_replacements = ["cyber spectra=>CyberSpectra"]`
+  in the existing `voice_captions` section of CyberServer's **server config**.
+  This does not train Vosk: only exact recognised phrases are replaced, with
+  no generative AI or transcript history. There are **no replacements by default**.
+* Recognition remains fully offline, opt-in, limited to proximity voice,
+  and uses the **same bundled English Vosk model** and existing CyberNpc
+  0.44.51+ client network protocol.
+* Under extreme load, bounded background queues are limited to 90 frames per
+  worker (previously 180) to reduce delayed/stale caption updates.
+
+To test: speak a few sentences with `/voicecaptions pacing normal`,
+then try `/voicecaptions pacing relaxed` and compare whether sentence endings
+feel more natural. A better resampler and configurable pauses might help
+recognition, but won't guarantee accurate recognition for every voice.
 
 ## Voice-caption diagnostics (0.2.7)
 

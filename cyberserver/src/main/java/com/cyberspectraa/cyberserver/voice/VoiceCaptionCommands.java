@@ -23,6 +23,17 @@ public final class VoiceCaptionCommands {
                                 .executes(ctx -> set(ctx.getSource(), true)))
                         .then(Commands.literal("off")
                                 .executes(ctx -> set(ctx.getSource(), false)))
+                        .then(Commands.literal("pacing")
+                                .executes(ctx -> showPacing(ctx.getSource()))
+                                .then(Commands.literal("fast")
+                                        .executes(ctx -> setPacing(ctx.getSource(),
+                                                VoiceCaptionConsent.Pacing.FAST)))
+                                .then(Commands.literal("normal")
+                                        .executes(ctx -> setPacing(ctx.getSource(),
+                                                VoiceCaptionConsent.Pacing.NORMAL)))
+                                .then(Commands.literal("relaxed")
+                                        .executes(ctx -> setPacing(ctx.getSource(),
+                                                VoiceCaptionConsent.Pacing.RELAXED))))
                         .then(Commands.literal("debug")
                                 .executes(ctx -> debug(ctx.getSource())))
                         .then(Commands.literal("test")
@@ -65,7 +76,8 @@ public final class VoiceCaptionCommands {
         if (player == null) return 0;
         source.sendSuccess(() -> Component.literal(
                 "Captions consent=" + VoiceCaptionConsent.isEnabled(player.getUUID())
-                + ", server enabled=" + VoiceCaptionConfig.ENABLED.get()), false);
+                + ", server enabled=" + VoiceCaptionConfig.ENABLED.get()
+                + ", pacing=" + VoiceCaptionConsent.getPacing(player.getUUID()).name()), false);
         if (!net.minecraftforge.fml.ModList.get().isLoaded("voicechat")) {
             source.sendFailure(Component.literal("Simple Voice Chat is not installed!"));
             return 0;
@@ -80,6 +92,26 @@ public final class VoiceCaptionCommands {
                     + error.getClass().getSimpleName()));
             return 0;
         }
+        return 1;
+    }
+
+    private int showPacing(CommandSourceStack source) {
+        ServerPlayer player = source.getPlayer();
+        if (player == null) return 0;
+        VoiceCaptionConsent.Pacing choice =
+                VoiceCaptionConsent.getPacing(player.getUUID());
+        source.sendSuccess(() -> Component.literal(
+                "Voice caption pacing: "
+                + choice.name().toLowerCase(java.util.Locale.ROOT)
+                + " (" + choice.silenceMillis() + "ms). "
+                + "Use /voicecaptions pacing fast, normal or relaxed."), false);
+        return 1;
+    }
+
+    private int setPacing(CommandSourceStack source, VoiceCaptionConsent.Pacing pacing) {
+        ServerPlayer player = source.getPlayer();
+        if (player == null) return 0;
+        VoiceCaptionConsent.setPacing(player, pacing);
         return 1;
     }
 
