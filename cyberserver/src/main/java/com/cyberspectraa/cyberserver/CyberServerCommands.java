@@ -1,5 +1,6 @@
 package com.cyberspectraa.cyberserver;
 
+import com.cyberspectraa.cyberserver.discord.DiscordMailBot;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
@@ -37,6 +38,14 @@ public final class CyberServerCommands {
                         .then(Commands.literal("status")
                                 .executes(ctx ->
                                         status(ctx.getSource())))
+                        .then(Commands.literal("discordmail")
+                                .then(Commands.literal("status")
+                                        .executes(ctx -> {
+                                            ctx.getSource().sendSuccess(
+                                                    () -> Component.literal(DiscordMailBot.status()),
+                                                    false);
+                                            return 1;
+                                        })))
                         .then(Commands.literal("state")
                                 .executes(ctx ->
                                         worldState(ctx.getSource())))
