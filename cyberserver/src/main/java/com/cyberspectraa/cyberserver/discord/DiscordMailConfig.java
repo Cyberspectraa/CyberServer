@@ -16,14 +16,17 @@ import java.util.Properties;
  * Dedicated-server configuration only; never contains credentials in the JAR.
  * Environment variables take priority for hosts that manage secrets externally.
  */
-record DiscordMailConfig(String token, String guildId, String applicationId, Path spoolDir) {
+public record DiscordMailConfig(String token, String guildId, String applicationId, Path spoolDir) {
     private static final String FILENAME = "cyberserver-discord-mail.properties";
 
-    @Nullable
-    static DiscordMailConfig load() {
+    /**
+     * Create the server-side config as soon as CyberServer itself loads.
+     * It must NOT depend on CyberNpc's version, Discord connectivity, world
+     * startup, or enabled=true; otherwise owners cannot configure the bot.
+     */
+    public static void ensureExists() {
         Path configDir = FMLPaths.CONFIGDIR.get();
         Path settingsFile = configDir.resolve(FILENAME);
-        Properties settings = new Properties();
         try {
             Files.createDirectories(configDir);
             if (!Files.exists(settingsFile)) {
@@ -32,15 +35,33 @@ record DiscordMailConfig(String token, String guildId, String applicationId, Pat
                 defaults.setProperty("bot_token", "");
                 defaults.setProperty("guild_id", "");
                 defaults.setProperty("application_id", "");
-                try (Writer writer = Files.newBufferedWriter(settingsFile, StandardCharsets.UTF_8)) {
-                    defaults.store(writer, "CyberServer Discord post office - server-only. Never share this file.");
+                try (Writer writer = Files.newBufferedWriter(settingsFile,
+                        StandardCharsets.UTF_8, java.nio.file.StandardOpenOption.CREATE_NEW)) {
+                    defaults.store(writer,
+                            "CyberServer Discord post office - server-only. Do not publish this file.");
+                } catch (java.nio.file.FileAlreadyExistsException ignored) {
+                    // Another server setup pass already created it.
                 }
-            }
-            try (Reader reader = Files.newBufferedReader(settingsFile, StandardCharsets.UTF_8)) {
-                settings.load(reader);
+                CyberServer.LOGGER.info(
+                        "Discord post office config location: {}", settingsFile.toAbsolutePath());
             }
         } catch (IOException ex) {
-            CyberServer.LOGGER.error("Could not read Discord mail configuration: {}", ex.getMessage());
+            CyberServer.LOGGER.error("Could not create Discord post office config at {}: {}",
+                    settingsFile.toAbsolutePath(), ex.getMessage());
+        }
+    }
+
+    @Nullable
+    static DiscordMailConfig load() {
+        ensureExists();
+        Path configDir = FMLPaths.CONFIGDIR.get();
+        Path settingsFile = configDir.resolve(FILENAME);
+        Properties settings = new Properties();
+        try (Reader reader = Files.newBufferedReader(settingsFile, StandardCharsets.UTF_8)) {
+            settings.load(reader);
+        } catch (IOException ex) {
+            CyberServer.LOGGER.error("Could not read Discord mail configuration at {}: {}",
+                    settingsFile.toAbsolutePath(), ex.getMessage());
             return null;
         }
 
