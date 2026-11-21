@@ -1,14 +1,39 @@
-# Fractured Island Discord Post Office (CyberServer 0.2.5)
+# Fractured Island Discord Post Office (CyberServer 0.2.6)
 
 This version hosts a Discord bot **inside CyberServer itself**. There is no
 Node.js program, outside hosting service, open Minecraft port or bot plugin
 to install. A dedicated Forge 1.20.1 / Java 17 server with both **CyberServer
-0.2.5** and **CyberNpc 0.45.6** is required.
+0.2.6** and **CyberNpc 0.45.7** is required.
 
 CyberServer runs the Discord Gateway connection, embed, buttons and form.
 CyberNpc already implements the actual postal database, physical Drop Boxes,
 courier pickup, player delivery and letterboxes. It consumes the local
 server-only mail spool. CyberServer does **not** duplicate the NPC mail data.
+
+## Changes in 0.2.6 (config and bundled summoning effect)
+
+The dedicated server now creates `config/cyberserver-discord-mail.properties`
+**when CyberServer itself loads**, before checking whether Discord is enabled
+or CyberNpc's version is compatible. The initial file contains
+`enabled=false` and blank credential fields, so you can configure it
+without a running Discord bot.
+
+Minecraft operator commands:
+
+    /cyberserver discordmail config
+    /cyberserver discordmail status
+
+The first command prints the absolute **server-side** file location. The
+second shows connection status without revealing the token. A single-player
+client's config directory is *not* the dedicated server's config directory.
+
+The original `cyberserver:summoning` effect from the supplied
+`CyberServer-Resources.zip` is now baked into the client-installed
+**CyberNpc 0.45.7 JAR** as `assets/cyberserver/fx/summoning.fx`.
+Photon is still required, but the external resource pack is not. CyberServer
+keeps triggering the same effect ID. Its normal local build now creates
+only the server mod JAR; the old resource-pack generator is a legacy
+authoring task and is not run automatically.
 
 ## Installation
 
@@ -17,7 +42,7 @@ server-only mail spool. CyberServer does **not** duplicate the NPC mail data.
    only after a successful Gradle build. On a dedicated server, replace the
    old **CyberServer** mod jar with it. Do not run GitHub Actions or merge
    into `main`.
-2. The Minecraft **server and clients** also need matching CyberNpc 0.45.6.
+2. The Minecraft **server and clients** also need matching CyberNpc 0.45.7.
    CyberServer is a **server-only** mod and does not go in the client modpack.
 3. Start the dedicated server once. CyberServer creates:
 
@@ -66,7 +91,7 @@ server-only mail spool. CyberServer does **not** duplicate the NPC mail data.
 
        /cybernpc discordmail unbind
 
-   These commands are implemented in CyberNpc 0.45.6. The designated box
+   These commands are implemented in CyberNpc 0.45.7. The designated box
    must be loaded, registered and not full. Courier NPCs must already be
    configured to collect from it.
 9. Test using a Discord member who is not a Minecraft player. Click the
