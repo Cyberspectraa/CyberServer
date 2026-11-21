@@ -60,6 +60,7 @@ public final class DiscordMailBot {
     private final Map<String, ArrayDeque<Long>> sentByUser = new HashMap<>();
 
     private volatile boolean running;
+    private volatile boolean online;
     private boolean connecting;
     private volatile WebSocket socket;
     private ScheduledFuture<?> heartbeatTask;
@@ -117,6 +118,16 @@ public final class DiscordMailBot {
         }
     }
 
+    /** Safe read-only status for Minecraft operators; never returns secrets. */
+    public static synchronized String status() {
+        if (instance == null) {
+            return "Discord post office is disabled, unconfigured, or CyberNpc is unavailable.";
+        }
+        return instance.online
+                ? "Discord post office is connected. Staff can use /mailpanel in Discord."
+                : "Discord post office is configured but still connecting or reconnecting.";
+    }
+
     @SubscribeEvent
     public static synchronized void onServerStopping(ServerStoppingEvent event) {
         if (instance != null) {
@@ -136,6 +147,7 @@ public final class DiscordMailBot {
 
     private void stop() {
         running = false;
+        online = false;
         if (heartbeatTask != null) heartbeatTask.cancel(false);
         WebSocket ws = socket;
         socket = null;
@@ -197,6 +209,7 @@ public final class DiscordMailBot {
     private void disconnect(WebSocket candidate) {
         if (candidate != socket) return;
         socket = null;
+        online = false;
         awaitingHeartbeatAck = false;
         sequence = -1L; // No resume token: identify a fresh session.
         candidate.abort();
@@ -212,6 +225,7 @@ public final class DiscordMailBot {
                 JsonElement seq = envelope.get("s");
                 if (seq != null && !seq.isJsonNull()) sequence = seq.getAsLong();
                 if ("READY".equals(string(envelope, "t"))) {
+                    online = true;
                     consecutiveFailures = 0;
                     CyberServer.LOGGER.info("Discord Post Office connected; /mailpanel is available");
                 } else if ("INTERACTION_CREATE".equals(string(envelope, "t"))) {
