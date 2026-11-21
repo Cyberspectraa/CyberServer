@@ -1,10 +1,33 @@
 # CyberServer
 
-**Current version: 0.2.4** · Minecraft **1.20.1** · Forge **47.4.10** · Java **17**
+**Current development version: 0.2.5** · Minecraft **1.20.1** · Forge **47.4.10** · Java **17**
 
 CyberServer is the **server-side world director** for the CyberSpectra Season 2 modpack. It keeps this specific world's story state, progression policy, first-arrival settings and authored quest bindings separate from the reusable [CyberRaces](https://github.com/Cyberspectraa/CyberRaces), [CyberClasses](https://github.com/Cyberspectraa/CyberClasses), [CyberNpc](https://github.com/Cyberspectraa/CyberNpc) and [CyberQuest](https://github.com/Cyberspectraa/CyberQuest) mods.
 
 CyberServer is designed to run on the **server**. Integrations with other mods are conditional; their reusable mechanics do not require CyberServer.
+
+## Discord Post Office — hosted in CyberServer (0.2.5)
+
+CyberServer can host the complete **Discord bot on the dedicated Minecraft
+server**. A Discord admin runs `/mailpanel` to post a permanent
+**Fractured Island Post Office** embed. Discord members press
+**Write a Letter** and choose a Minecraft recipient and message.
+The sender uses their actual Discord username; no account linking.
+
+The bot places the submission into CyberNpc 0.45.6's existing Drop Box
+queue. CyberNpc couriers then deliver to the intended player or letterbox.
+Discord credentials stay in the dedicated server's private
+`config/cyberserver-discord-mail.properties` file or environment, never
+inside the JAR. The integration is **disabled by default** and requires no
+Node.js process or separate web host.
+
+See [full setup and safety instructions](docs/DISCORD_POST_OFFICE.md).
+The bot needs outbound Discord connectivity and can only receive letters
+while the Minecraft server is running.
+
+Build this development branch locally with `build-local.bat` on Windows
+(JDK 17, Gradle 8.8). It writes `CyberServer.jar` after a successful
+build; do not trigger GitHub Actions.
 
 ## Persistent world state
 
