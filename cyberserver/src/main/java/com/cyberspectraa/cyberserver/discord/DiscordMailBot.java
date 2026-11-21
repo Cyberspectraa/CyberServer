@@ -83,8 +83,12 @@ public final class DiscordMailBot {
 
     @SubscribeEvent
     public static synchronized void onServerStarted(ServerStartedEvent event) {
-        if (!event.getServer().isDedicatedServer()
-                || !ModList.get().isLoaded("cybernpc") || instance != null) {
+        if (!event.getServer().isDedicatedServer() || instance != null) return;
+        // Also ensure the file on server startup for servers that load mods in
+        // an unusual order. Missing CyberNpc may disable the BOT, not config.
+        DiscordMailConfig.ensureExists();
+        if (!ModList.get().isLoaded("cybernpc")) {
+            CyberServer.LOGGER.warn("Discord post office requires CyberNpc 0.45.6+, but its config is ready");
             return;
         }
         DiscordMailConfig config = DiscordMailConfig.load();
