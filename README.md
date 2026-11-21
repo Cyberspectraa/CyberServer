@@ -1,12 +1,12 @@
 # CyberServer
 
-**Current development version: 0.2.5** · Minecraft **1.20.1** · Forge **47.4.10** · Java **17**
+**Current development version: 0.2.6** · Minecraft **1.20.1** · Forge **47.4.10** · Java **17**
 
 CyberServer is the **server-side world director** for the CyberSpectra Season 2 modpack. It keeps this specific world's story state, progression policy, first-arrival settings and authored quest bindings separate from the reusable [CyberRaces](https://github.com/Cyberspectraa/CyberRaces), [CyberClasses](https://github.com/Cyberspectraa/CyberClasses), [CyberNpc](https://github.com/Cyberspectraa/CyberNpc) and [CyberQuest](https://github.com/Cyberspectraa/CyberQuest) mods.
 
 CyberServer is designed to run on the **server**. Integrations with other mods are conditional; their reusable mechanics do not require CyberServer.
 
-## Discord Post Office — hosted in CyberServer (0.2.5)
+## Discord Post Office — hosted in CyberServer (0.2.6)
 
 CyberServer can host the complete **Discord bot on the dedicated Minecraft
 server**. A Discord admin runs `/mailpanel` to post a permanent
@@ -14,7 +14,7 @@ server**. A Discord admin runs `/mailpanel` to post a permanent
 **Write a Letter** and choose a Minecraft recipient and message.
 The sender uses their actual Discord username; no account linking.
 
-The bot places the submission into CyberNpc 0.45.6's existing Drop Box
+The bot places the submission into CyberNpc 0.45.7's existing Drop Box
 queue. CyberNpc couriers then deliver to the intended player or letterbox.
 Discord credentials stay in the dedicated server's private
 `config/cyberserver-discord-mail.properties` file or environment, never
@@ -28,6 +28,26 @@ Operators can check Discord bot connectivity using
 See [full setup and safety instructions](docs/DISCORD_POST_OFFICE.md).
 The bot needs outbound Discord connectivity and can only receive letters
 while the Minecraft server is running.
+
+### Embedded intro FX (no external resource pack)
+
+The golden summoning effect `cyberserver:summoning` from the old
+`CyberServer-Resources.zip` is now bundled in the client-installed
+**CyberNpc 0.45.7** JAR. CyberServer remains server-only and continues to
+trigger it through Photon. The separate ZIP is no longer needed, and normal
+CyberServer builds no longer generate the resource pack automatically.
+
+### Finding the Discord config
+
+CyberServer now creates
+`config/cyberserver-discord-mail.properties` **when the dedicated-server
+mod loads**, even with Discord disabled or an older/missing CyberNpc.
+In Minecraft, `/cyberserver discordmail config` prints its absolute location.
+`/cyberserver discordmail status` reports the bot connection state.
+The configuration does not appear in the client's config folder or inside
+the JAR. Start the dedicated server and check the server's own `config`
+folder before testing.
+
 
 Build this development branch locally with `build-local.bat` on Windows
 (JDK 17, Gradle 8.8). It writes `CyberServer.jar` after a successful
