@@ -21,6 +21,10 @@ Discord credentials stay in the dedicated server's private
 inside the JAR. The integration is **disabled by default** and requires no
 Node.js process or separate web host.
 
+Operators can check Discord bot connectivity using
+`/cyberserver discordmail status`. (The separate CyberNpc command
+`/cybernpc discordmail status` shows the assigned physical Drop Box.)
+
 See [full setup and safety instructions](docs/DISCORD_POST_OFFICE.md).
 The bot needs outbound Discord connectivity and can only receive letters
 while the Minecraft server is running.
