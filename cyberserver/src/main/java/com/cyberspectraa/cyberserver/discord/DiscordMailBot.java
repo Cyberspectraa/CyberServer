@@ -59,9 +59,9 @@ public final class DiscordMailBot {
     // Accessed on the one bot scheduler thread, never the MC server thread.
     private final Map<String, ArrayDeque<Long>> sentByUser = new HashMap<>();
 
-    private boolean running;
+    private volatile boolean running;
     private boolean connecting;
-    private WebSocket socket;
+    private volatile WebSocket socket;
     private ScheduledFuture<?> heartbeatTask;
     private boolean awaitingHeartbeatAck;
     private long sequence = -1L;
@@ -139,7 +139,12 @@ public final class DiscordMailBot {
         http.newWebSocketBuilder()
                 .connectTimeout(Duration.ofSeconds(15))
                 .buildAsync(GATEWAY, new GatewayListener())
-                .whenComplete((ws, error) -> tasks.execute(() -> {
+                .whenComplete((ws, error) -> {
+                    if (!running) {
+                        if (ws != null) ws.abort();
+                        return;
+                    }
+                    tasks.execute(() -> {
                     connecting = false;
                     if (!running) {
                         if (ws != null) ws.abort();
@@ -150,7 +155,8 @@ public final class DiscordMailBot {
                                 error.getClass().getSimpleName());
                         scheduleConnect();
                     }
-                }));
+                    });
+                });
     }
 
     private void scheduleConnect() {
@@ -180,7 +186,9 @@ public final class DiscordMailBot {
             if (op == 0) {
                 JsonElement seq = envelope.get("s");
                 if (seq != null && !seq.isJsonNull()) sequence = seq.getAsLong();
-                if ("INTERACTION_CREATE".equals(string(envelope, "t"))) {
+                if ("READY".equals(string(envelope, "t"))) {
+                    CyberServer.LOGGER.info("Discord Post Office connected; /mailpanel is available");
+                } else if ("INTERACTION_CREATE".equals(string(envelope, "t"))) {
                     JsonObject interaction = object(envelope, "d");
                     if (interaction != null) interaction(interaction);
                 }
@@ -522,6 +530,10 @@ public final class DiscordMailBot {
 
         @Override
         public void onOpen(WebSocket ws) {
+            if (!running) {
+                ws.abort();
+                return;
+            }
             tasks.execute(() -> {
                 if (!running) {
                     ws.abort();
@@ -534,6 +546,7 @@ public final class DiscordMailBot {
 
         @Override
         public CompletionStage<?> onText(WebSocket ws, CharSequence data, boolean last) {
+            if (!running) return CompletableFuture.completedFuture(null);
             chunks.append(data);
             if (chunks.length() > 256_000) {
                 ws.abort();
@@ -548,13 +561,13 @@ public final class DiscordMailBot {
 
         @Override
         public CompletionStage<?> onClose(WebSocket ws, int statusCode, String reason) {
-            tasks.execute(() -> disconnect(ws));
+            if (running) tasks.execute(() -> disconnect(ws));
             return CompletableFuture.completedFuture(null);
         }
 
         @Override
         public void onError(WebSocket ws, Throwable error) {
-            tasks.execute(() -> disconnect(ws));
+            if (running) tasks.execute(() -> disconnect(ws));
         }
     }
 }
