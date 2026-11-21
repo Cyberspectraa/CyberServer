@@ -88,8 +88,33 @@ public final class DiscordMailBot {
         }
         DiscordMailConfig config = DiscordMailConfig.load();
         if (config == null) return;
+        String npcVersion = ModList.get().getModContainerById("cybernpc")
+                .map(mod -> mod.getModInfo().getVersion().toString())
+                .orElse("");
+        if (!hasPostalImporter(npcVersion)) {
+            CyberServer.LOGGER.warn("Discord mail requires CyberNpc 0.45.6 or later (found {})",
+                    npcVersion);
+            return;
+        }
         instance = new DiscordMailBot(config);
         instance.start();
+    }
+
+    private static boolean hasPostalImporter(String version) {
+        // Mod versions may carry a suffix such as -alpha or +build; compare
+        // the three leading numeric parts without blocking unrelated mods.
+        java.util.regex.Matcher m =
+                java.util.regex.Pattern.compile("^(\\d+)\\.(\\d+)\\.(\\d+)")
+                        .matcher(version);
+        if (!m.find()) return false;
+        try {
+            int major = Integer.parseInt(m.group(1));
+            int minor = Integer.parseInt(m.group(2));
+            int patch = Integer.parseInt(m.group(3));
+            return major > 0 || minor > 45 || (minor == 45 && patch >= 6);
+        } catch (NumberFormatException ex) {
+            return false;
+        }
     }
 
     @SubscribeEvent
