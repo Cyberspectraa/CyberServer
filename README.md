@@ -175,7 +175,7 @@ Authored quests are JSON under `cyberserver/src/main/resources/data/cyberserver/
 
 - Target: **Minecraft 1.20.1 / Forge 47.4.10 / Java 17**.
 - Server mod JAR: produced by the repository's Gradle/GitHub Actions build; its version is read from `gradle.properties`.
-- The GitHub Actions build also packages a separately named **CyberServer resource-pack ZIP** when needed for optional visuals. A resource pack is not the server mod JAR.
+- The summoning Photon FX is now included in the client-installed **CyberNpc 0.45.7** JAR. Normal CyberServer builds require **no separate resource-pack ZIP**; its legacy Gradle exporter remains available only for effect authoring. GitHub Actions are not used.
 - Optional integration with CyberNpc (full intro), CyberQuest (world quest bindings/state gates), CyberRaces (Cyber Level and race policy), CyberClasses (class advancement policy) and Photon FX when present.
 - The server state stores gates and configuration; a complete Season 2 main questline, map/region content and boss encounters still require authored gameplay content.
 
