@@ -19,6 +19,11 @@ import java.util.Properties;
 public record DiscordMailConfig(String token, String guildId, String applicationId, Path spoolDir) {
     private static final String FILENAME = "cyberserver-discord-mail.properties";
 
+    /** For operators to locate the generated config without revealing secrets. */
+    public static Path configPath() {
+        return FMLPaths.CONFIGDIR.get().resolve(FILENAME).toAbsolutePath();
+    }
+
     /**
      * Create the server-side config as soon as CyberServer itself loads.
      * It must NOT depend on CyberNpc's version, Discord connectivity, world
