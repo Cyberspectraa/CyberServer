@@ -187,6 +187,7 @@ public final class DiscordMailBot {
                 JsonElement seq = envelope.get("s");
                 if (seq != null && !seq.isJsonNull()) sequence = seq.getAsLong();
                 if ("READY".equals(string(envelope, "t"))) {
+                    consecutiveFailures = 0;
                     CyberServer.LOGGER.info("Discord Post Office connected; /mailpanel is available");
                 } else if ("INTERACTION_CREATE".equals(string(envelope, "t"))) {
                     JsonObject interaction = object(envelope, "d");
@@ -215,7 +216,6 @@ public final class DiscordMailBot {
             disconnect(from);
             return;
         }
-        consecutiveFailures = 0;
         if (heartbeatTask != null) heartbeatTask.cancel(false);
         awaitingHeartbeatAck = false;
         heartbeatTask = tasks.scheduleAtFixedRate(
