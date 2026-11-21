@@ -1,0 +1,20 @@
+# Forge, Gradle and local build output
+.gradle/
+build/
+out/
+run/
+run-data/
+*.class
+.idea/
+.vscode/
+*.iml
+
+# Local compiled JAR and build log
+/CyberServer.jar
+/build-local.log
+
+# Never commit Discord credentials or private mail requests
+**/cyberserver-discord-mail.properties
+**/cybernpc-discord-mail/
+.env
+.env.*
