@@ -49,7 +49,9 @@ server-only mail spool. CyberServer does **not** duplicate the NPC mail data.
    Environment variables take precedence over properties. All three IDs and
    the token are validated before connecting.
 6. Restart Minecraft. The server log should say the post office is starting
-   and later that the bot has connected. The bot registers a guild-only
+   and later that the bot has connected. Operators can also run
+   `/cyberserver discordmail status` for safe, token-free connection status.
+   The bot registers a guild-only
    `/mailpanel` command without replacing other Discord commands.
 7. In Discord, an administrator with Manage Server permission uses
    `/mailpanel` in the desired channel. It posts the **Fractured Island Post
