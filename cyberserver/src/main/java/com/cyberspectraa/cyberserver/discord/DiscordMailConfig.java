@@ -11,7 +11,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Properties;
 
@@ -55,12 +54,10 @@ public record DiscordMailConfig(String token, String guildId, String application
 
             Path legacy = legacyConfigPath();
             if (Files.isRegularFile(legacy)) {
-                // A non-overwriting MOVE preserves real tokens/IDs and avoids
-                // leaving a second plaintext token file behind. Prefer atomic
-                // move if supported; the paths live under the same config dir.
+                // Default move semantics never overwrite the destination.
+                // Keep a pre-existing new config authoritative and avoid
+                // leaving a second plaintext token file behind.
                 try {
-                    Files.move(legacy, file, StandardCopyOption.ATOMIC_MOVE);
-                } catch (java.nio.file.AtomicMoveNotSupportedException ex) {
                     Files.move(legacy, file);
                 } catch (FileAlreadyExistsException ex) {
                     // Another setup pass created the new file first.
