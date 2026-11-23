@@ -15,6 +15,7 @@ run-data/
 
 # Never commit Discord credentials or private mail requests
 **/cyberserver-discord-mail.properties
+**/cyberserver/discord-mail.properties
 **/cybernpc-discord-mail/
 .env
 .env.*
