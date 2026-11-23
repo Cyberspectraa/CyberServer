@@ -83,10 +83,16 @@ public final class DiscordMailBot {
 
     @SubscribeEvent
     public static synchronized void onServerStarted(ServerStartedEvent event) {
-        if (!event.getServer().isDedicatedServer() || instance != null) return;
-        // Also ensure the file on server startup for servers that load mods in
-        // an unusual order. Missing CyberNpc may disable the BOT, not config.
-        DiscordMailConfig.ensureExists();
+        if (instance != null) return;
+        // Generate and print the path before checking dedicated-only bot
+        // requirements. The config is useful even in integrated test worlds.
+        if (!DiscordMailConfig.ensureExists()) return;
+        CyberServer.LOGGER.info("Discord Post Office settings: {}", DiscordMailConfig.configPath());
+        if (!event.getServer().isDedicatedServer()) {
+            CyberServer.LOGGER.info(
+                    "Discord mail bot remains offline in single-player; it runs only on dedicated servers");
+            return;
+        }
         if (!ModList.get().isLoaded("cybernpc")) {
             CyberServer.LOGGER.warn("Discord post office requires CyberNpc 0.45.6+, but its config is ready");
             return;
