@@ -1,12 +1,31 @@
 # CyberServer
 
-**Current development version: 0.2.6** · Minecraft **1.20.1** · Forge **47.4.10** · Java **17**
+**Current development version: 0.2.7** · Minecraft **1.20.1** · Forge **47.4.10** · Java **17**
 
 CyberServer is the **server-side world director** for the CyberSpectra Season 2 modpack. It keeps this specific world's story state, progression policy, first-arrival settings and authored quest bindings separate from the reusable [CyberRaces](https://github.com/Cyberspectraa/CyberRaces), [CyberClasses](https://github.com/Cyberspectraa/CyberClasses), [CyberNpc](https://github.com/Cyberspectraa/CyberNpc) and [CyberQuest](https://github.com/Cyberspectraa/CyberQuest) mods.
 
 CyberServer is designed to run on the **server**. Integrations with other mods are conditional; their reusable mechanics do not require CyberServer.
 
-## Discord Post Office — hosted in CyberServer (0.2.6)
+## Discord config location and setup repair (0.2.7)
+
+The Discord bot's private settings now live in
+`config/cyberserver/discord-mail.properties`, **inside the CyberServer
+folder** you may already see in the Minecraft server's config directory.
+
+CyberServer creates that file as soon as the mod loads (including local
+test-world setups). If an existing
+`config/cyberserver-discord-mail.properties` contains your settings,
+it is moved into the new folder without overwriting an existing new file.
+The bot still only connects on a **dedicated Minecraft server**.
+
+Operators can explicitly create/check the file with
+`/cyberserver discordmail setup` (or `/cyber server discordmail setup`
+when using the unified CyberNpc command hub). The old
+`/cyberserver discordmail config` command also works and shows the
+actual path plus token/ID configuration statuses, without showing secrets.
+After editing the file, restart the server to enable the bot.
+
+## Discord Post Office — hosted in CyberServer (0.2.7)
 
 CyberServer can host the complete **Discord bot on the dedicated Minecraft
 server**. A Discord admin runs `/mailpanel` to post a permanent
@@ -17,7 +36,7 @@ The sender uses their actual Discord username; no account linking.
 The bot places the submission into CyberNpc 0.45.7's existing Drop Box
 queue. CyberNpc couriers then deliver to the intended player or letterbox.
 Discord credentials stay in the dedicated server's private
-`config/cyberserver-discord-mail.properties` file or environment, never
+`config/cyberserver/discord-mail.properties` file or environment, never
 inside the JAR. The integration is **disabled by default** and requires no
 Node.js process or separate web host.
 
@@ -40,13 +59,14 @@ CyberServer builds no longer generate the resource pack automatically.
 ### Finding the Discord config
 
 CyberServer now creates
-`config/cyberserver-discord-mail.properties` **when the dedicated-server
+`config/cyberserver/discord-mail.properties` **when the dedicated-server
 mod loads**, even with Discord disabled or an older/missing CyberNpc.
 In Minecraft, `/cyberserver discordmail config` prints its absolute location.
 `/cyberserver discordmail status` reports the bot connection state.
-The configuration does not appear in the client's config folder or inside
-the JAR. Start the dedicated server and check the server's own `config`
-folder before testing.
+The bot only connects from a **dedicated** server, but the empty config
+file is also generated in integrated/local test-world setups for visibility.
+For actual Discord delivery, edit the dedicated server's own config file,
+not a copy in the client folder. Restart after editing.
 
 
 Build this development branch locally with `build-local.bat` on Windows
