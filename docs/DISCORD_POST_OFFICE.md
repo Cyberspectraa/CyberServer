@@ -1,18 +1,54 @@
-# Fractured Island Discord Post Office (CyberServer 0.2.6)
+# Fractured Island Discord Post Office (CyberServer 0.2.7)
 
 This version hosts a Discord bot **inside CyberServer itself**. There is no
 Node.js program, outside hosting service, open Minecraft port or bot plugin
 to install. A dedicated Forge 1.20.1 / Java 17 server with both **CyberServer
-0.2.6** and **CyberNpc 0.45.7** is required.
+0.2.7** and **CyberNpc 0.45.7** is required.
 
 CyberServer runs the Discord Gateway connection, embed, buttons and form.
 CyberNpc already implements the actual postal database, physical Drop Boxes,
 courier pickup, player delivery and letterboxes. It consumes the local
 server-only mail spool. CyberServer does **not** duplicate the NPC mail data.
 
-## Changes in 0.2.6 (config and bundled summoning effect)
+## Fixed config creation in 0.2.7
 
-The dedicated server now creates `config/cyberserver-discord-mail.properties`
+The correct file is now:
+
+    <dedicated server>/config/cyberserver/discord-mail.properties
+
+The `cyberserver` folder is intentional. CyberServer creates the private
+settings file inside it, rather than requiring the owner to guess whether
+the configuration is in that folder or at the top level of `config`.
+
+On startup, existing settings from the old flat path
+`config/cyberserver-discord-mail.properties` are migrated into the
+new location **only if the new file is absent**. Existing values are
+preserved and never overwritten. A generated new file contains:
+
+    enabled=false
+    bot_token=
+    guild_id=
+    application_id=
+
+An operator can run either
+`/cyberserver discordmail setup` or
+`/cyberserver discordmail config` to create/check the file on demand.
+Both report the absolute config location and only whether credentials
+are present, not their values. If the file is missing due to filesystem
+permissions, the command reports an error rather than claiming success.
+
+When CyberNpc 0.45.9's command hub is installed, the equivalent is
+`/cyber server discordmail setup`.
+
+The file is generated on CyberServer mod construction even in an
+integrated/local test world. **However, the Discord bot only runs on
+dedicated Minecraft servers**. Your production bot token should remain
+on the dedicated server, not distributed with client modpacks. Restart
+the dedicated server after editing its config.
+
+## Earlier changes in 0.2.6 (config and bundled summoning effect)
+
+The dedicated server now creates `config/cyberserver/discord-mail.properties`
 **when CyberServer itself loads**, before checking whether Discord is enabled
 or CyberNpc's version is compatible. The initial file contains
 `enabled=false` and blank credential fields, so you can configure it
@@ -46,7 +82,7 @@ authoring task and is not run automatically.
    CyberServer is a **server-only** mod and does not go in the client modpack.
 3. Start the dedicated server once. CyberServer creates:
 
-       <server>/config/cyberserver-discord-mail.properties
+       <server>/config/cyberserver/discord-mail.properties
 
    It defaults to disabled. Stop the server before editing.
 4. Create a bot application in the Discord Developer Portal. Install it
