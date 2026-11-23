@@ -47,15 +47,13 @@ public final class CyberServerCommands {
                                                     false);
                                             return 1;
                                         }))
+                                // Both commands create the config if needed.
+                                // Keep /config for existing instructions and
+                                // /setup for people who have no file yet.
                                 .then(Commands.literal("config")
-                                        .executes(ctx -> {
-                                            ctx.getSource().sendSuccess(
-                                                    () -> Component.literal(
-                                                            "Discord bot config: "
-                                                                    + DiscordMailConfig.configPath()),
-                                                    false);
-                                            return 1;
-                                        })))
+                                        .executes(ctx -> showDiscordConfig(ctx.getSource())))
+                                .then(Commands.literal("setup")
+                                        .executes(ctx -> showDiscordConfig(ctx.getSource()))))
                         .then(Commands.literal("state")
                                 .executes(ctx ->
                                         worldState(ctx.getSource())))
@@ -68,6 +66,28 @@ public final class CyberServerCommands {
                                 .then(npcProgressionCommands())
                                 .then(economyCommands()))
         );
+    }
+
+    private static int showDiscordConfig(CommandSourceStack source) {
+        boolean created = DiscordMailConfig.ensureExists();
+        if (!created) {
+            source.sendFailure(Component.literal(
+                    "Could not create Discord settings. Check the server log and "
+                            + "folder permissions: " + DiscordMailConfig.configPath()));
+            return 0;
+        }
+
+        source.sendSuccess(
+                () -> Component.literal(DiscordMailConfig.setupSummary()), false);
+        if (!source.getServer().isDedicatedServer()) {
+            source.sendSuccess(
+                    () -> Component.literal(
+                            "This world is integrated/single-player: the config is available "
+                                    + "for setup, but the Discord bot connects only on a "
+                                    + "dedicated Minecraft server."),
+                    false);
+        }
+        return 1;
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack>
