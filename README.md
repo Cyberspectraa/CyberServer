@@ -4,7 +4,7 @@
 
 CyberServer is the **server-side world director** for the CyberSpectra Season 2 modpack. It keeps this specific world's story state, progression policy, first-arrival settings and authored quest bindings separate from the reusable [CyberRaces](https://github.com/Cyberspectraa/CyberRaces), [CyberClasses](https://github.com/Cyberspectraa/CyberClasses), [CyberNpc](https://github.com/Cyberspectraa/CyberNpc) and [CyberQuest](https://github.com/Cyberspectraa/CyberQuest) mods.
 
-CyberServer is designed to run on the **server**. Integrations with other mods are conditional; their reusable mechanics do not require CyberServer.
+CyberServer is designed to run on the **server**. CyberQuest is a required server dependency. CyberNpc and CyberRaces integrations are conditional, and their reusable mechanics do not require CyberServer.
 
 ## Discord config location and setup repair (0.2.7)
 
@@ -33,7 +33,7 @@ server**. A Discord admin runs `/mailpanel` to post a permanent
 **Write a Letter** and choose a Minecraft recipient and message.
 The sender uses their actual Discord username; no account linking.
 
-The bot places the submission into CyberNpc 0.45.7's existing Drop Box
+The bot places the submission into CyberNpc 0.45.6+’s existing Drop Box
 queue. CyberNpc couriers then deliver to the intended player or letterbox.
 Discord credentials stay in the dedicated server's private
 `config/cyberserver/discord-mail.properties` file or environment, never
@@ -56,22 +56,18 @@ The golden summoning effect `cyberserver:summoning` from the old
 trigger it through Photon. The separate ZIP is no longer needed, and normal
 CyberServer builds no longer generate the resource pack automatically.
 
-### Finding the Discord config
+### Local Windows build
 
-CyberServer now creates
-`config/cyberserver/discord-mail.properties` **when the dedicated-server
-mod loads**, even with Discord disabled or an older/missing CyberNpc.
-In Minecraft, `/cyberserver discordmail config` prints its absolute location.
-`/cyberserver discordmail status` reports the bot connection state.
-The bot only connects from a **dedicated** server, but the empty config
-file is also generated in integrated/local test-world setups for visibility.
-For actual Discord delivery, edit the dedicated server's own config file,
-not a copy in the client folder. Restart after editing.
+Use Java 17 and the included Gradle 8.8 launcher. Install the resulting CyberServer.jar only on the dedicated server; CyberQuest must also be present. For Discord mail, use matching CyberNpc client/server JARs (current 0.45.9).
 
+```powershell
+cd "$HOME\CyberMods\CyberServer"
+git switch development-no-actions
+git pull --ff-only
+.\build-local.bat
+```
 
-Build this development branch locally with `build-local.bat` on Windows
-(JDK 17, Gradle 8.8). It writes `CyberServer.jar` after a successful
-build; do not trigger GitHub Actions.
+First checkout: `git clone --branch development-no-actions https://github.com/Cyberspectraa/CyberServer.git` from the CyberMods folder. No GitHub Actions. Replace older JARs only after the build succeeds.
 
 ## Persistent world state
 
@@ -92,11 +88,13 @@ CyberServer retains the exact spawn location and tracks one-time arrivals. When 
 
 Current integrated experience:
 
-1. CyberRaces and CyberClasses complete character setup when those mods are installed.
-2. CyberNpc shows the temporary Blockbench **TESTING VERSION** title, then the summoning cinematic at the saved arrival block.
-3. The cinematic camera returns to the player's view and the Pope greeting begins.
+1. CyberRaces character creation completes; configured intro worlds defer class registration until the Guild Receptionist.
+2. CyberNpc displays the Fractured Island title and a two-pulse summoning cinematic lasting 13 seconds, including the player reveal.
+3. Camera restoration leads into the Pope's greeting and newcomer quests. CyberQuest tracks guild class registration; CyberRaces gates Cyber XP until a class is chosen.
 
-The accepted integrated intro implementation is in **CyberNpc 0.44.39**. CyberServer provides a summoning-effect bridge; without an eligible CyberNpc intro it retains a shorter arrival fallback (Photon support when available, otherwise vanilla-style particles/sounds).
+CyberNpc 0.45.8+ owns the extended cinematic. CyberServer retains the original Photon bridge and its shorter fallback where the full intro is unavailable. The original summoning FX is packaged in CyberNpc 0.45.7+ and no separate resource pack is needed.
+
+With CyberNpc 0.45.9+, all commands can be reached through `/cyber server` and `/cyber arrival`. The legacy prefixes below remain supported with unchanged permissions.
 
 ### Arrival commands
 
@@ -194,9 +192,15 @@ Authored quests are JSON under `cyberserver/src/main/resources/data/cyberserver/
 ## Installation, builds and integration notes
 
 - Target: **Minecraft 1.20.1 / Forge 47.4.10 / Java 17**.
-- Server mod JAR: produced by the repository's Gradle/GitHub Actions build; its version is read from `gradle.properties`.
+- Server mod JAR: produced by the local Gradle launcher; the mod version is 0.2.7 in both Gradle and mod metadata.
 - The summoning Photon FX is now included in the client-installed **CyberNpc 0.45.7** JAR. Normal CyberServer builds require **no separate resource-pack ZIP**; its legacy Gradle exporter remains available only for effect authoring. GitHub Actions are not used.
-- Optional integration with CyberNpc (full intro), CyberQuest (world quest bindings/state gates), CyberRaces (Cyber Level and race policy), CyberClasses (class advancement policy) and Photon FX when present.
+- Required CyberQuest dependency for world quest bindings/state gates; optional integrations with CyberNpc (full intro and mail importer), CyberRaces (Cyber Level and race policy), CyberClasses (class advancement policy) and Photon FX when present.
 - The server state stores gates and configuration; a complete Season 2 main questline, map/region content and boss encounters still require authored gameplay content.
 
 **Command migration:** older examples such as `/cyberserver npcprogression`, `/cyberserver story`, `/cyberserver economy`, `/arrival beam` and `/arrival resetall` have moved under the `admin` subcommands shown above.
+
+## Current development set
+
+CyberServer 0.2.7, CyberNpc 0.45.9, CyberQuest 0.3.0-alpha.23, CyberRaces 0.3.2-alpha.76 and CyberClasses 0.2.1-alpha.13. Use `/cyber server discordmail setup` for config creation and `/cyber server discordmail status` for connection state with the unified hub installed. The physical mail binding remains `/cyber npc discordmail bind`. Keep bot credentials private. Build and test the current source before production use; a successful registration check alone is not a gameplay test.
+
+[Previous README](https://github.com/Cyberspectraa/CyberServer/blob/7b2e5ed730a5019df0a1fee8ccaf2ce4b5c61e6e/README.md).
