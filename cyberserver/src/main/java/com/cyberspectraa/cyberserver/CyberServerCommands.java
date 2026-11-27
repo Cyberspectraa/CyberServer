@@ -22,7 +22,7 @@ import net.minecraftforge.fml.ModList;
 import java.lang.reflect.Method;
 
 public final class CyberServerCommands {
-    private static final String VERSION = "0.2.7";
+    private static final String VERSION = "0.2.8";
 
     private CyberServerCommands() {
     }
@@ -30,42 +30,19 @@ public final class CyberServerCommands {
     public static void register(
             CommandDispatcher<CommandSourceStack> dispatcher
     ) {
-        // Keep the old convenient command for existing worlds/admin habits.
-        dispatcher.register(buildArrivalCommands());
-
-        dispatcher.register(
-                Commands.literal("cyberserver")
-                        .requires(source -> source.hasPermission(2))
-                        .then(Commands.literal("status")
-                                .executes(ctx ->
-                                        status(ctx.getSource())))
+        dispatcher.register(Commands.literal("cadmin")
+                .requires(source -> source.hasPermission(2))
+                .then(buildArrivalCommands())
+                .then(Commands.literal("server")
                         .then(Commands.literal("discordmail")
                                 .then(Commands.literal("status")
                                         .executes(ctx -> {
                                             ctx.getSource().sendSuccess(
-                                                    () -> Component.literal(DiscordMailBot.status()),
-                                                    false);
+                                                    () -> Component.literal(DiscordMailBot.status()), false);
                                             return 1;
                                         }))
-                                // Both commands create the config if needed.
-                                // Keep /config for existing instructions and
-                                // /setup for people who have no file yet.
-                                .then(Commands.literal("config")
-                                        .executes(ctx -> showDiscordConfig(ctx.getSource())))
                                 .then(Commands.literal("setup")
-                                        .executes(ctx -> showDiscordConfig(ctx.getSource()))))
-                        .then(Commands.literal("state")
-                                .executes(ctx ->
-                                        worldState(ctx.getSource())))
-                        .then(Commands.literal("admin")
-                                .then(storyCommands())
-                                .then(flagCommands())
-                                .then(regionCommands())
-                                .then(bossCommands())
-                                .then(npcQuestCommands())
-                                .then(npcProgressionCommands())
-                                .then(economyCommands()))
-        );
+                                        .executes(ctx -> showDiscordConfig(ctx.getSource()))))));
     }
 
     private static int showDiscordConfig(CommandSourceStack source) {
@@ -115,67 +92,7 @@ public final class CyberServerCommands {
                                         )
                                 ))))
                 
-                .then(Commands.literal("reset")
-                        .then(Commands.argument(
-                                        "player",
-                                        EntityArgument.player()
-                                )
-                                .executes(ctx -> reset(
-                                        ctx.getSource(),
-                                        EntityArgument.getPlayer(
-                                                ctx,
-                                                "player"
-                                        )
-                                ))))
-                
-                
-                
-                .then(Commands.literal("admin")
-                    .then(Commands.literal("beam")
-                        .executes(ctx -> beam(
-                                ctx.getSource(),
-                                ctx.getSource()
-                                        .getPlayerOrException()
-                        ))
-                        .then(Commands.argument(
-                                        "player",
-                                        EntityArgument.player()
-                                )
-                                .executes(ctx -> beam(
-                                        ctx.getSource(),
-                                        EntityArgument.getPlayer(
-                                                ctx,
-                                                "player"
-                                        )
-                                ))))
-                    .then(Commands.literal("resetall")
-                        .executes(ctx ->
-                                resetAll(ctx.getSource())))
-                    .then(Commands.literal("mark")
-                        .then(Commands.argument(
-                                        "player",
-                                        EntityArgument.player()
-                                )
-                                .executes(ctx -> mark(
-                                        ctx.getSource(),
-                                        EntityArgument.getPlayer(
-                                                ctx,
-                                                "player"
-                                        )
-                                ))))
-                    .then(Commands.literal("info")
-                        .then(Commands.argument(
-                                        "player",
-                                        EntityArgument.player()
-                                )
-                                .executes(ctx -> info(
-                                        ctx.getSource(),
-                                        EntityArgument.getPlayer(
-                                                ctx,
-                                                "player"
-                                        )
-                                ))))
-                );
+                ;
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack>
